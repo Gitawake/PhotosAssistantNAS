@@ -103,6 +103,19 @@ class NativeTests(unittest.TestCase):
             decoder.compatible_video.assert_called_once_with('fd:',Path('/work'),source_ext='.mp4')
             self.assertEqual(decoder.transcode.call_count,0 if compatible else 1)
 
+    def test_scheduler_drains_empty_history_pages_before_waiting(self):
+        offset=0
+        for size in (100,100,37):
+            offset,busy=n.scan_progress(offset,size,0)
+            if size==100: self.assertTrue(busy)
+            else: self.assertFalse(busy)
+        self.assertEqual(offset,0)
+    def test_scheduler_revisits_batch_until_drained_and_then_idles(self):
+        self.assertEqual(n.scan_progress(200,100,2),(200,True))
+        self.assertEqual(n.scan_progress(200,100,0),(300,True))
+        self.assertEqual(n.scan_progress(300,8,1),(0,True))
+        self.assertEqual(n.scan_progress(0,8,0),(0,False))
+
     def test_local_api_allowlist(self):
         with tempfile.TemporaryDirectory() as folder:
             api=n.NativePhotos('someone',folder)

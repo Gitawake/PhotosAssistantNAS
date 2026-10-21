@@ -2,6 +2,11 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.5.4 — drain pending work without idle waits
+
+- Continue immediately after processing tasks or while historical pages remain; wait 60 seconds only when the scan reaches idle. Keep sequential decoding, two-success batches and existing CPU/memory limits.
+- Back off unavailable API contexts for 60 seconds independently; failed media retain their one-hour retry delay.
+
 ## 0.5.3 — skip compatible originals and scan historical media
 
 - Probe original video streams through the read-only descriptor before transcoding. Conservative SDR H.264 MP4/M4V with AAC-LC audio can keep the original and generate missing thumbnails only. Existing compatibility copies are retained.

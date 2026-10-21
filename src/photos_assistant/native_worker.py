@@ -237,6 +237,13 @@ def process(api,entry,state,package,commit=True):
                              'source_compatible':bool(source_compatible),'source_identity':source_identity(fresh)})
     return True
 
+def scan_progress(offset,page_size,processed):
+    """Keep draining work/pages; wait only after reaching the collection end."""
+    if processed>=2: return offset,True
+    if page_size==100: return offset+100,True
+    return 0,processed>0
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action',choices=['once','daemon'])
@@ -268,13 +275,16 @@ def main():
     retries=json.loads(retry_path.read_text()) if retry_path.exists() else {}
     cursors_path=args.state/'native-full-cursors.json'
     cursors=json.loads(cursors_path.read_text()) if cursors_path.exists() else {}
+    api_retry={}
     while True:
+        busy=False
         assert_photos_version()
         users=[pwd.getpwnam(args.runner)] if args.runner else candidates()
         for user in users:
             api=NativePhotos(user.pw_name,args.state)
             for space in (('SYNO.Foto',) if args.test_item else ('SYNO.Foto','SYNO.FotoTeam')):
                 key=user.pw_name+':'+space
+                if api_retry.get(key,0)>time.time(): continue
                 try:
                     offset=cursors.get(key,0)
                     # Watch newest media while progressing through older pages.
@@ -300,11 +310,16 @@ def main():
                             if count>=2: break
                         if count>=2: break
                     last=pages[-1][1]
-                    if count<2: cursors[key]=offset+100 if len(last)==100 else 0
+                    cursors[key],more=scan_progress(offset,len(last),count)
+                    busy=busy or more
                     atomic_json(cursors_path,cursors)
-                except ApiError as error: logging.info('Local API unavailable code=%s',error.code)
-                except Exception as error: logging.warning('Scan failed=%s',type(error).__name__)
+                except ApiError as error:
+                    logging.info('Local API unavailable code=%s',error.code)
+                    api_retry[key]=time.time()+60
+                except Exception as error:
+                    logging.warning('Scan failed=%s',type(error).__name__)
+                    api_retry[key]=time.time()+60
         if args.action=='once': return
-        time.sleep(60)
+        if not busy: time.sleep(60)
 
 if __name__=='__main__': main()
