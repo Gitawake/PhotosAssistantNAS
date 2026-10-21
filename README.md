@@ -27,6 +27,12 @@ curl -fsSL https://raw.githubusercontent.com/Gitawake/PhotosAssistantNAS/main/bo
 
 引导程序先显示数据风险提示并检查 NAS 环境，将 `main` 解析为一个固定提交，下载该提交的源码，在 NAS 上下载并校验锁定的上游依赖、本机构建，再安装服务。依赖、源码和构建临时文件在结束后清理。整个过程无需 Photos 账号、密码或 OTP；sudo 仍是 DSM 管理员安装权限。
 
+如果网络无法访问 `raw.githubusercontent.com`，可改用 GitHub 官方 API 下载同一入口（仍校验 HTTPS）：
+
+```sh
+curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/Gitawake/PhotosAssistantNAS/contents/bootstrap.sh?ref=main' -o "$HOME/photos-assistant-install.sh" && sudo sh "$HOME/photos-assistant-install.sh"
+```
+
 查看已下载的脚本后再执行也可以。需要固定版本时，应从同一完整提交的 raw URL 下载入口，并传入 `--ref <40位提交SHA>`。只检查环境而不下载或安装可加 `--check`；只下载并构建、验证完成即清理而不安装可加 `--build-only`；其他卷使用 `--volume /volume2`。需要能访问 GitHub 和 SynoCommunity 的 HTTPS 网络，临时构建至少需要 2 GiB 空间。
 
 在线卸载：
