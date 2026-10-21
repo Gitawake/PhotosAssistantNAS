@@ -3,7 +3,6 @@
 import argparse
 import ctypes
 import contextlib
-import errno
 import fcntl
 import json
 import logging
@@ -153,23 +152,6 @@ def open_input(api,entry):
         yield fd,verify
     finally: os.close(fd)
 
-@contextlib.contextmanager
-def image_snapshot(fd,entry,destination):
-    # ImageMagick has no seekable FD protocol. Images retain private staging.
-    with destination.open('xb') as output:
-        try: fcntl.ioctl(output.fileno(),0x40049409,fd)
-        except OSError as error:
-            if error.errno not in (errno.EOPNOTSUPP,errno.EXDEV,errno.ENOTTY,errno.EINVAL,errno.ENOSYS): raise
-            output.seek(0);output.truncate(0)
-            require_space(destination.parent,int(entry['filesize'])+1024**3)
-            remaining=int(entry['filesize'])
-            while remaining:
-                require_space(destination.parent,1024**3)
-                chunk=os.read(fd,min(1024*1024,remaining))
-                if not chunk: raise ValueError('Original truncated')
-                output.write(chunk);remaining-=len(chunk)
-    yield
-
 def process(api,entry,state,package,commit=True):
     preview,video=needs(entry)
     if not (preview or video): return False
@@ -180,20 +162,15 @@ def process(api,entry,state,package,commit=True):
     with tempfile.TemporaryDirectory(prefix='job-',dir=str(state)) as d:
         job=Path(d);os.chmod(job,0o711)
         decode=job/'decode';decode.mkdir(mode=0o700);os.chown(decode,package.pw_uid,package.pw_gid)
-        source=decode/('source'+ext)
         with open_input(api,entry) as (source_fd,verify_original):
             cmd=['/bin/python3',str(Path(__file__).with_name('decode_job.py')),str(decode),
-                 str(int(preview)),str(int(video))]
-            inherited=()
-            if ext in VIDEO_EXT:
-                cmd += [str(source_fd),ext];inherited=(source_fd,)
-                logging.info('item=%s source=readonly-fd bytes=%s',item,entry['filesize'])
-            else:
-                with image_snapshot(source_fd,entry,source): pass
-                verify_original()
-                os.chown(source,package.pw_uid,package.pw_gid);os.chmod(source,0o400)
+                 str(int(preview)),str(int(video)),str(source_fd),ext]
+            resolution=entry.get('additional',{}).get('resolution',{})
+            if ext in IMAGE_EXT:
+                cmd += [str(int(resolution.get('width',0))),str(int(resolution.get('height',0)))]
+            logging.info('item=%s source=readonly-fd bytes=%s',item,entry['filesize'])
             child=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True,
-                                   pass_fds=inherited,env={'PATH':'/usr/bin:/bin','LANG':'C'},
+                                   pass_fds=(source_fd,),env={'PATH':'/usr/bin:/bin','LANG':'C'},
                                    preexec_fn=sandbox(package.pw_uid,package.pw_gid))
             try:
                 _,err=child.communicate(timeout=22000)

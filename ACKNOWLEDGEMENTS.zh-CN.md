@@ -17,7 +17,7 @@ PhotosAssistantNAS 建立在开源社区长期维护的媒体工具和打包成�
 | 项目 / 团队 | 在本项目中的用途 | 来源与许可入口 |
 | --- | --- | --- |
 | FFmpeg 项目及贡献者 | FFprobe 探测、视频缩略图、H.264/AAC 兼容副本、可随机定位的只读 `fd:` 输入 | [官网](https://ffmpeg.org/) · [许可说明](https://ffmpeg.org/legal.html) |
-| ImageMagick Studio 及贡献者 | HEIC/HEIF 解码、方向处理及 JPEG 缩略图 | [官网](https://imagemagick.org/) · [许可证](https://imagemagick.org/license/) |
+| ImageMagick Studio 及贡献者 | 内存 MagickWand 缩放与 JPEG 缩略图 | [官网](https://imagemagick.org/) · [许可证](https://imagemagick.org/license/) |
 | SynoCommunity 维护者与贡献者 | 适用于 DSM 的媒体工具、私有动态库的原始构建和包配方 | [spksrc](https://github.com/SynoCommunity/spksrc) · [FFmpeg 包](https://synocommunity.com/package/ffmpeg8) · [ImageMagick 包](https://synocommunity.com/package/imagemagick) · [视频运行库包](https://synocommunity.com/package/synocli-videodriver) |
 | Python Software Foundation 与 Python 贡献者 | 安装、卸载、任务协调和构建脚本使用的标准库 | [Python](https://www.python.org/) · [许可证](https://docs.python.org/3/license.html) |
 | Linux / systemd 项目及贡献者 | 文件句柄、进程权限隔离和服务管理 | [Linux](https://www.kernel.org/) · [systemd](https://systemd.io/) |
@@ -30,7 +30,7 @@ PhotosAssistantNAS 建立在开源社区长期维护的媒体工具和打包成�
 
 | 项目 | 作用 | 上游 |
 | --- | --- | --- |
-| libheif | HEIF/HEIC 容器和解码接口 | [strukturag/libheif](https://github.com/strukturag/libheif) |
+| libheif | HEIF/HEIC 主图解码、方向变换及可定位读取回调 | [strukturag/libheif](https://github.com/strukturag/libheif) |
 | libde265 | HEVC 图像解码 | [strukturag/libde265](https://github.com/strukturag/libde265) |
 | libjpeg-turbo | JPEG 编解码 | [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo) |
 | x264 | H.264 编码 | [VideoLAN x264](https://www.videolan.org/developers/x264.html) |

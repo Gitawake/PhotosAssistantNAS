@@ -2,6 +2,12 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.5.1 — direct HEIF image input
+
+- Read HEIC/HEIF/HIF through an inherited read-only descriptor and libheif reader callbacks; import pixels directly into MagickWand. No source-image staging or encoded intermediate.
+- Preserve primary-image transformations, high-bit-depth sample scaling, thumbnail geometry and ICC profiles. Disable disk/mapped image caches; apply dimension/profile/cache limits and abort safely when resources are unavailable.
+- Keep Photos publication, original identity checks, isolated decoding, video behavior and uninstall retention. No compiler, extra SPK or PyPI dependency is required.
+
 ## 0.5.0 — direct video input
 
 - Video decoding/transcoding reads an inherited read-only original descriptor using FFmpeg's seekable `fd:` protocol. No full source-video copy, Btrfs clone or original permission change.

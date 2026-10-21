@@ -4,7 +4,7 @@
   <policy domain="module" rights="none" pattern="*" />
   <policy domain="module" rights="read|write" pattern="{HEIC,JPEG}" />
   <policy domain="path" rights="none" pattern="@*" />
-  <policy domain="resource" name="memory" value="256MiB" />
+  <policy domain="resource" name="memory" value="768MiB" />
   <policy domain="resource" name="map" value="512MiB" />
   <policy domain="resource" name="disk" value="1GiB" />
   <policy domain="resource" name="thread" value="2" />

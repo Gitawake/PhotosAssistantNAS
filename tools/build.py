@@ -8,7 +8,7 @@ import tarfile
 from runtime import add_bytes, append_runtime, download_locked, sha256
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.5.0'
+VERSION = '0.5.1'
 
 
 def main():
@@ -29,7 +29,7 @@ def main():
             for name, package in sorted(packages.items()):
                 details = append_runtime(archive, name, package, ROOT / 'src/photos_assistant/policy.xml')
                 manifest['dependencies'][name] = dict(lock[name], **details)
-            for name in ('worker.py', 'native_worker.py', 'decode_job.py', 'service_entry.py'):
+            for name in ('worker.py', 'native_worker.py', 'decode_job.py', 'heic_fd.py', 'service_entry.py'):
                 add_bytes(archive, name, (ROOT / 'src/photos_assistant' / name).read_bytes())
             add_bytes(archive, 'uninstall.py', (ROOT / 'scripts/uninstall.py').read_bytes())
             for path in sorted((ROOT / 'licenses').iterdir()):

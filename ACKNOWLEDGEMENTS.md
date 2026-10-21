@@ -17,7 +17,7 @@ The current SSH deployment, local-interface coordination without Photos login, i
 | Project / team | Use in this project | Source and license information |
 | --- | --- | --- |
 | FFmpeg project and contributors | FFprobe inspection, video thumbnails, H.264/AAC compatibility copies, seekable read-only `fd:` input | [Website](https://ffmpeg.org/) · [Licensing](https://ffmpeg.org/legal.html) |
-| ImageMagick Studio and contributors | HEIC/HEIF decoding, orientation handling, JPEG thumbnails | [Website](https://imagemagick.org/) · [License](https://imagemagick.org/license/) |
+| ImageMagick Studio and contributors | In-memory MagickWand resizing and JPEG thumbnails | [Website](https://imagemagick.org/) · [License](https://imagemagick.org/license/) |
 | SynoCommunity maintainers and contributors | Original DSM builds of media tools and private shared libraries, and package recipes | [spksrc](https://github.com/SynoCommunity/spksrc) · [FFmpeg package](https://synocommunity.com/package/ffmpeg8) · [ImageMagick package](https://synocommunity.com/package/imagemagick) · [Video libraries](https://synocommunity.com/package/synocli-videodriver) |
 | Python Software Foundation and Python contributors | Standard library used by installation, uninstall, coordination, and build scripts | [Python](https://www.python.org/) · [License](https://docs.python.org/3/license.html) |
 | Linux / systemd projects and contributors | File descriptors, process privilege isolation, service management | [Linux](https://www.kernel.org/) · [systemd](https://systemd.io/) |
@@ -30,7 +30,7 @@ Upstream runtimes include or link additional open-source components. The followi
 
 | Project | Role | Upstream |
 | --- | --- | --- |
-| libheif | HEIF/HEIC containers and decoding interface | [strukturag/libheif](https://github.com/strukturag/libheif) |
+| libheif | HEIF/HEIC primary-image decoding, transformations and seekable reader callbacks | [strukturag/libheif](https://github.com/strukturag/libheif) |
 | libde265 | HEVC image decoding | [strukturag/libde265](https://github.com/strukturag/libde265) |
 | libjpeg-turbo | JPEG encoding and decoding | [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo) |
 | x264 | H.264 encoding | [VideoLAN x264](https://www.videolan.org/developers/x264.html) |

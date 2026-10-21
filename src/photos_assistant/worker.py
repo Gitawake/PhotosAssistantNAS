@@ -8,6 +8,7 @@ import tempfile
 import math
 import shutil
 import time
+import sys
 
 FREE_HEADROOM=4*1024**3
 MAX_OUTPUT_BYTES=16*1024**3
@@ -40,9 +41,18 @@ class Decoder:
                 MAGICK_TEMPORARY_PATH=str(work),MAGICK_THREAD_LIMIT='2',MAGICK_MEMORY_LIMIT='256MiB',MAGICK_MAP_LIMIT='512MiB')
         return env
     def run(self, name, executable, args, work, timeout=180):
-        process=subprocess.Popen([str(self.runtime/name/'bin'/executable),*map(str,args)],
-            env=self.env(name,work),stdout=subprocess.PIPE,stderr=subprocess.PIPE,
-            pass_fds=((self.source_fd,) if name=='ffmpeg' and hasattr(self,'source_fd') else ()),
+        if name=='heic':
+            command=[sys.executable,'-I',str(Path(__file__).with_name('heic_fd.py')),*map(str,args)]
+            env=self.env('imagemagick',work)
+            # MagickWand's pinned jemalloc needs startup TLS, before Python dlopen.
+            # This private allocator is preloaded only in this isolated helper.
+            env['LD_PRELOAD']=str(self.runtime/'imagemagick/lib/libjemalloc.so.2')
+        else:
+            command=[str(self.runtime/name/'bin'/executable),*map(str,args)]
+            env=self.env(name,work)
+        process=subprocess.Popen(command,
+            env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+            pass_fds=((self.source_fd,) if name in ('ffmpeg','heic') and hasattr(self,'source_fd') else ()),
             start_new_session=not getattr(self,'nested',False))
         try:
             deadline=time.monotonic()+timeout
@@ -76,6 +86,11 @@ class Decoder:
         return ['-protocol_whitelist','file,pipe','-i',source]
 
     def generate(self, source, ext, work):
+        if ext in ('.heic','.heif','.hif'):
+            if source!='fd:' or not hasattr(self,'source_fd'):
+                raise ValueError('HEIF requires a read-only original descriptor')
+            self.run('heic','heic_fd',[self.source_fd,work,*getattr(self,'expected_size',(0,0))],work)
+            return {label:work/(label+'.jpg') for label in ('SM','M','XL')}
         input_path=str(source)+'[0]'
         if ext in ('.mov','.mp4','.m4v','.3g2','.3gp','.asf','.avi','.divx','.mpeg','.mpg','.mts','.m2t','.m2ts','.qt','.wmv','.xvid'):
             probe=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-select_streams','v:0',

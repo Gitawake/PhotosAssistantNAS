@@ -72,7 +72,7 @@ curl -fsSL https://raw.githubusercontent.com/Gitawake/PhotosAssistantNAS/main/un
 python3 tools/build.py
 ```
 
-构建脚本从锁定的 SynoCommunity 官方地址下载三个原始 SPK，校验 SHA256，仅提取运行时文件，**不执行 SPK 安装脚本、不依赖本地旧版 SPK**。结果位于 `dist/PhotosAssistantNAS-0.5.0-x64.private.tar`。
+构建脚本从锁定的 SynoCommunity 官方地址下载三个原始 SPK，校验 SHA256，仅提取运行时文件，**不执行 SPK 安装脚本、不依赖本地旧版 SPK**。结果位于 `dist/PhotosAssistantNAS-0.5.1-x64.private.tar`。
 
 **这个构建结果仅供个人使用，不应上传到公开 Releases。** 当前锁定 FFmpeg 启用了 `--enable-gpl --enable-version3 --enable-nonfree`。公开分发前需要更换为可再分发的构建，并逐项完成来源、许可证及对应源码审计，不能只附几份许可证。见 [分发说明](docs/distribution.zh-CN.md)。
 
@@ -95,7 +95,7 @@ sudo /bin/python3 -I /volume1/@PhotosAssistantNAS/uninstall.py
 
 也可在解压后的安装目录执行 `sudo sh uninstall.sh`。安装到其他卷时，卸载命令也加 `--volume /volume2`。
 
-视频不设置固定源文件大小上限，最长 6 小时。root 只读打开原视频，将一个文件句柄传给隔离进程；私有 FFmpeg 使用可随机定位的 `fd:` 协议流式读取，**不复制或克隆整份源视频、不修改原文件权限，也不依赖 Btrfs**。HEIC/HEIF 图片仍使用私有临时输入（优先克隆，不支持时分块复制）。按时长与目标码率预留解码输出、发布暂存、Photos 最终副本三份输出及临时空间，解码期间每 5 秒检查至少 4 GiB 可用空间，不足则中止；其他程序仍可能同时写满磁盘，这不是空间配额。单个生成文件最多 16 GiB，保留线程、优先级限制及失败一小时后重试。兼容副本会额外占用容量；不要为清理副本而删除整个 `@eaDir`。
+视频不设置固定源文件大小上限，最长 6 小时。root 只读打开原视频，将一个文件句柄传给隔离进程；私有 FFmpeg 使用可随机定位的 `fd:` 协议流式读取，**不复制或克隆整份源视频、不修改原文件权限，也不依赖 Btrfs**。HEIC/HEIF 图片同样使用继承的只读句柄：私有 Python/ctypes 桥接将 libheif 的可定位读取接口连接到 ImageMagick 的内存 MagickWand 接口，不创建原图副本、中间 PNG/JPEG 或像素缓存文件，只写最终缩略图及其发布暂存。图片限制为 64 Mi 像素、单边不超过 32768 像素，ICC 配置最多 4 MiB，ImageMagick 像素缓存最多 768 MiB；这是上限，不是预占空间，也不是整个进程的内存上限。图片禁用磁盘及映射缓存，分配失败则中止任务、留待重试。解码仍需内存和原文件读取，操作系统也可能将内存换出到磁盘。按时长与目标码率预留解码输出、发布暂存、Photos 最终副本三份输出及临时空间，解码期间每 5 秒检查至少 4 GiB 可用空间，不足则中止；其他程序仍可能同时写满磁盘，这不是空间配额。单个生成文件最多 16 GiB，保留线程、优先级限制及失败一小时后重试。兼容副本会额外占用容量；不要为清理副本而删除整个 `@eaDir`。
 
 ## 测试、兼容性与贡献
 

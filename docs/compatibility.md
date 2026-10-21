@@ -32,6 +32,13 @@ The public source preparation removes unused session-login and abandoned SPK cod
 - A two-second synthetic HEVC MP4 with its metadata at the end of the media and sparse padding to 9 GiB completed isolated JPEG/H.264 generation via a root-opened read-only descriptor. No staged source file was created. This exercises seeking and removal of the old size cap, not real 9 GiB payload throughput.
 - An existing HEIC completed isolated thumbnail regression processing. Original fingerprints were checked before publishing or discarding outputs.
 
+## 0.5.1 direct-image validation
+
+- Three existing HEIC images produced all nine JPEG thumbnails via a read-only original descriptor. Decoded output pixels and dimensions matched 0.5.0 (PSNR infinite in all nine comparisons); this does not establish equivalence to official Image Assistant.
+- A rotated 4032×3024 10-bit synthetic HEIC and an alpha-channel synthetic HEIC matched the old output pixels. A synthetic 8000×6000 HEIC completed all three sizes; its helper peaked at approximately 734 MiB RSS on the tested NAS. Other media can require more memory.
+- Directory event monitoring observed only the three final JPEG creations during direct-image processing, with no source copy, encoded intermediate or pixel-cache file. Original identity fingerprints stayed unchanged. The OS can still page or swap RAM.
+- Full isolated image and video jobs succeeded without publishing replacements. A malformed HEIC was rejected and its task directory removed, preserving the original.
+
 ## Not fully validated
 
 - Native phone App playback for this worker's outputs.

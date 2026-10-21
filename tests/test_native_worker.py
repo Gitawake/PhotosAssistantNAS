@@ -6,7 +6,6 @@ import unittest
 from unittest import mock
 import json
 import os
-import errno
 from types import SimpleNamespace
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'src/photos_assistant'))
@@ -38,14 +37,23 @@ class NativeTests(unittest.TestCase):
             api=SimpleNamespace(open_original=lambda _:os.open(source,os.O_RDWR))
             with self.assertRaises(ValueError):
                 with n.open_input(api,{'filesize':8}): pass
-    def test_image_copy_fallback_preserves_original(self):
+    def test_heic_job_inherits_only_readonly_original_and_cleans_failure(self):
         with tempfile.TemporaryDirectory() as folder:
-            root=Path(folder);source=root/'original';source.write_bytes(b'original')
+            root=Path(folder);source=root/'original.heic';source.write_bytes(b'original')
             api=SimpleNamespace(open_original=lambda _:os.open(source,os.O_RDONLY))
-            with n.open_input(api,{'filesize':8}) as (fd,verify):
-                with mock.patch.object(n.fcntl,'ioctl',side_effect=OSError(errno.EXDEV,'cross-device')), mock.patch.object(n,'require_space'):
-                    with n.image_snapshot(fd,{'filesize':8},root/'snapshot'): pass
-                self.assertEqual((root/'snapshot').read_bytes(),b'original');verify()
+            item={'filename':'original.heic','filesize':8,'id':1,'additional':{
+                'thumbnail':{'unit_id':42,'sm':'broken'},'resolution':{'width':4000,'height':3000}}}
+            def start(command,**kwargs):
+                fd=kwargs['pass_fds'][0]
+                self.assertEqual(command[-4:],[str(fd),'.heic','4000','3000'])
+                self.assertEqual(os.read(fd,8),b'original')
+                with self.assertRaises(OSError): os.write(fd,b'x')
+                self.assertFalse(any(root.rglob('source.*')))
+                return SimpleNamespace(communicate=lambda **_: (b'',b''),returncode=1)
+            with mock.patch.object(n,'require_space'), mock.patch.object(n.os,'chown'), mock.patch.object(n.subprocess,'Popen',side_effect=start):
+                with self.assertRaises(RuntimeError): n.process(api,item,root,SimpleNamespace(pw_uid=1,pw_gid=1))
+            self.assertEqual(list(root.iterdir()),[source])
+            self.assertEqual(source.read_bytes(),b'original')
 
     def test_original_path_traversal_and_symlinks_rejected(self):
         with tempfile.TemporaryDirectory() as folder:

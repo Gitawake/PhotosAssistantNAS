@@ -24,6 +24,16 @@ class WorkerTests(unittest.TestCase):
                 self.assertEqual(start.call_args.kwargs['pass_fds'],(source.fileno(),))
                 decoder.run('imagemagick','convert',[],Path('/unused'))
                 self.assertEqual(start.call_args.kwargs['pass_fds'],())
+                decoder.run('heic','heic_fd',[source.fileno(),'/unused',0,0],Path('/unused'))
+                self.assertEqual(start.call_args.kwargs['pass_fds'],(source.fileno(),))
+                self.assertEqual(start.call_args.kwargs['env']['LD_PRELOAD'],'/runtime/imagemagick/lib/libjemalloc.so.2')
+    def test_heic_preview_uses_direct_helper_without_encoded_intermediate(self):
+        decoder=Decoder('/runtime');decoder.source_fd=5;decoder.expected_size=(4032,3024)
+        with mock.patch.object(decoder,'run') as run:
+            result=decoder.generate('fd:','.heic',Path('/work'))
+            self.assertEqual(result, {label:Path('/work')/(label+'.jpg') for label in ('SM','M','XL')})
+            self.assertEqual(run.call_args.args,('heic','heic_fd',[5,Path('/work'),4032,3024],Path('/work')))
+        with self.assertRaises(ValueError): decoder.generate(Path('/source.heic'),'.heic',Path('/work'))
     def test_duration_and_output_budget(self):
         for duration in (0,-1,21601,float('nan'),float('inf')):
             with self.assertRaises(ValueError): video_budget(duration)
