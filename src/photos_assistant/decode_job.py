@@ -13,7 +13,10 @@ def main():
     decoder.source_fd=int(sys.argv[4]);source='fd:';ext=sys.argv[5]
     decoder.expected_size=tuple(map(int,sys.argv[6:8])) or (0,0)
     if preview: decoder.generate(source,ext,work)
-    if video: decoder.transcode(source,work)
+    if video:
+        if decoder.compatible_video(source,work,source_ext=ext):
+            print('SOURCE_COMPATIBLE',flush=True)
+        else: decoder.transcode(source,work)
 
 if __name__=='__main__':
     try: main()

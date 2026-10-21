@@ -27,13 +27,22 @@ IMAGE_EXT={'.heic','.heif','.hif'}
 MISSING={'ame_defect','broken'}
 ADDITIONAL=['thumbnail','video_convert','resolution']
 
-def needs(entry):
+IDENTITY_FIELDS=('filename','filesize','indexed_time','folder_id','owner_user_id')
+
+def source_identity(entry):
+    return {key:entry.get(key) for key in IDENTITY_FIELDS}
+
+def needs(entry,previous=None):
     ext=Path(entry.get('filename','')).suffix.lower()
     add=entry.get('additional',{})
     thumb=add.get('thumbnail',{})
     preview=ext in VIDEO_EXT|IMAGE_EXT and any(thumb.get(k) in MISSING for k in ('sm','m','xl'))
     video=(ext in VIDEO_EXT and add.get('video_convert_status') in MISSING
            and not any(v.get('quality')=='high' for v in add.get('video_convert',[])))
+    if (previous and previous.get('source_compatible') is True
+            and previous.get('source_identity')==source_identity(entry)
+            and previous.get('cache_key')==thumb.get('cache_key')):
+        video=False
     return bool(thumb.get('unit_id')) and preview, bool(thumb.get('unit_id')) and video
 
 class NativePhotos:
@@ -63,7 +72,7 @@ class NativePhotos:
             if not result.get('success'): raise ApiError(result.get('error',{}).get('code'))
             return result.get('data',{})
     def list(self, space, offset):
-        return self.call(space+'.Browse.RecentlyAdded','list',6,offset=offset,limit=100,additional=ADDITIONAL).get('list',[])
+        return self.call(space+'.Browse.Item','list',4,offset=offset,limit=100,additional=ADDITIONAL).get('list',[])
     def get(self, space, item_id):
         entries=self.call(space+'.Browse.Item','get',4,id=[item_id],additional=ADDITIONAL).get('list',[])
         if len(entries)!=1: raise ValueError('Item disappeared')
@@ -173,7 +182,7 @@ def process(api,entry,state,package,commit=True):
                                    pass_fds=(source_fd,),env={'PATH':'/usr/bin:/bin','LANG':'C'},
                                    preexec_fn=sandbox(package.pw_uid,package.pw_gid))
             try:
-                _,err=child.communicate(timeout=22000)
+                out,err=child.communicate(timeout=22000)
             except BaseException:
                 os.killpg(child.pid,signal.SIGKILL);child.wait();raise
             if child.returncode:
@@ -182,6 +191,11 @@ def process(api,entry,state,package,commit=True):
                 reason=next((reasons[line] for line in err.splitlines() if line in reasons),'unknown')
                 logging.warning('item=%s decoder_failure=%s exit=%s',item,reason,child.returncode)
                 raise RuntimeError('Decoder failed')
+            source_compatible=video and b'SOURCE_COMPATIBLE' in out.splitlines()
+            if video and not source_compatible and not (decode/'compatible.mp4').exists():
+                raise RuntimeError('Decoder returned no video decision')
+            if source_compatible:
+                logging.info('item=%s video=source-compatible',item)
             verify_original()
             fresh=api.get(entry['_space'],item)
             if fresh.get('additional',{}).get('thumbnail',{}).get('unit_id')!=unit: raise ValueError('Item changed')
@@ -219,7 +233,8 @@ def process(api,entry,state,package,commit=True):
             if commit:
                 atomic_json(state/('item-%s-%s.json' % (api.runner,item)),
                             {'item':item,'space':entry['_space'],'bytes':sum(p.stat().st_size for p in outputs.values()),
-                             'outputs':list(outputs),'cache_key':fresh.get('additional',{}).get('thumbnail',{}).get('cache_key')})
+                             'outputs':list(outputs),'cache_key':fresh.get('additional',{}).get('thumbnail',{}).get('cache_key'),
+                             'source_compatible':bool(source_compatible),'source_identity':source_identity(fresh)})
     return True
 
 def main():
@@ -251,7 +266,7 @@ def main():
     package=SimpleNamespace(pw_uid=uid,pw_gid=uid)
     retry_path=args.state/'retry.json'
     retries=json.loads(retry_path.read_text()) if retry_path.exists() else {}
-    cursors_path=args.state/'native-cursors.json'
+    cursors_path=args.state/'native-full-cursors.json'
     cursors=json.loads(cursors_path.read_text()) if cursors_path.exists() else {}
     while True:
         assert_photos_version()
@@ -270,10 +285,8 @@ def main():
                         for entry in entries:
                             if args.test_item and entry['id'] not in args.test_item: continue
                             ledger=args.state/('item-%s-%s.json' % (user.pw_name,entry['id']))
-                            if ledger.exists():
-                                previous=json.loads(ledger.read_text())
-                                if previous.get('cache_key')==entry.get('additional',{}).get('thumbnail',{}).get('cache_key') and not any(needs(entry)): continue
-                            if not any(needs(entry)): continue
+                            previous=json.loads(ledger.read_text()) if ledger.exists() else None
+                            if not any(needs(entry,previous)): continue
                             retry_key=key+':'+str(entry['id'])
                             if retries.get(retry_key,0)>time.time(): continue
                             entry['_space']=space

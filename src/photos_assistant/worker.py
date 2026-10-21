@@ -110,7 +110,7 @@ class Decoder:
             outputs[label]=dest
         return outputs
 
-    def compatible_video(self, source, work):
+    def compatible_video(self, source, work, source_ext=None):
         """Conservative cross-device SDR MP4 baseline; container alone is insufficient."""
         probe=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-show_streams',
             '-show_format','-of','json',*self.input_args(source)],work))
@@ -125,7 +125,8 @@ class Decoder:
                 and max(int(v.get('width',0)),int(v.get('height',0)))<=1920
                 and all(a.get('codec_name')=='aac' and a.get('profile')=='LC'
                         and int(a.get('channels',99))<=2 for a in audio)
-                and Path(source).suffix.lower() in ('.mp4','.m4v'))
+                and (source_ext or Path(source).suffix).lower() in ('.mp4','.m4v')
+                and 'mp4' in probe.get('format',{}).get('format_name','').split(','))
 
     def transcode(self, source, work):
         probe=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-select_streams','v:0',

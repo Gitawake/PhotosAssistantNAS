@@ -76,6 +76,33 @@ class NativeTests(unittest.TestCase):
     def test_pending_unknown_and_ready_not_transcoded(self):
         for status in ['pending','future','ready']:
             self.assertFalse(n.needs(entry(video_convert_status=status))[1])
+    def test_compatible_original_cache_invalidated_by_source_or_cache_changes(self):
+        e=entry();e.update(filename='clip.mp4',filesize=100,indexed_time=12,folder_id=2,owner_user_id=3)
+        e['additional']['thumbnail']['cache_key']='v1'
+        previous={'source_compatible':True,'source_identity':n.source_identity(e),'cache_key':'v1'}
+        self.assertEqual(n.needs(e,previous),(False,False))
+        e['additional']['thumbnail']['sm']='broken'
+        self.assertEqual(n.needs(e,previous),(True,False))
+        e['filesize']=101
+        self.assertEqual(n.needs(e,previous),(True,True))
+        e['filesize']=100;e['additional']['thumbnail']['cache_key']='v2'
+        self.assertEqual(n.needs(e,previous),(True,True))
+    def test_full_collection_used_for_historical_scan(self):
+        api=n.NativePhotos('someone','/unused')
+        with mock.patch.object(api,'call',return_value={'list':[]}) as call:
+            api.list('SYNO.Foto',1000)
+            self.assertEqual(call.call_args.args,('SYNO.Foto.Browse.Item','list',4))
+            self.assertEqual(call.call_args.kwargs['offset'],1000)
+    def test_decode_job_skips_compatible_original_but_keeps_thumbnails(self):
+        import decode_job
+        for compatible in (True,False):
+            decoder=mock.Mock();decoder.compatible_video.return_value=compatible
+            with mock.patch.object(decode_job.os,'geteuid',return_value=1), mock.patch.object(decode_job,'Decoder',return_value=decoder), mock.patch.object(sys,'argv',['decode_job','/work','1','1','5','.mp4']), mock.patch('builtins.print'):
+                decode_job.main()
+            decoder.generate.assert_called_once()
+            decoder.compatible_video.assert_called_once_with('fd:',Path('/work'),source_ext='.mp4')
+            self.assertEqual(decoder.transcode.call_count,0 if compatible else 1)
+
     def test_local_api_allowlist(self):
         with tempfile.TemporaryDirectory() as folder:
             api=n.NativePhotos('someone',folder)

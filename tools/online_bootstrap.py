@@ -127,7 +127,7 @@ def main():
         if args.build_only:
             print('Build validation passed. No service or installation was changed; temporary files will be removed.')
             return
-        installer = build / 'PhotosAssistantNAS-0.5.2-x64/install.py'
+        installer = build / 'PhotosAssistantNAS-0.5.3-x64/install.py'
         command = [sys.executable, '-I', str(installer), '--volume', args.volume]
         if args.no_start:
             command.append('--no-start')

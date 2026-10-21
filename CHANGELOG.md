@@ -2,6 +2,12 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.5.3 — skip compatible originals and scan historical media
+
+- Probe original video streams through the read-only descriptor before transcoding. Conservative SDR H.264 MP4/M4V with AAC-LC audio can keep the original and generate missing thumbnails only. Existing compatibility copies are retained.
+- Cache source compatibility against item identity and Photos cache key; recheck changed items. This does not mark Photos conversion status as ready or guarantee playback on every client.
+- Scan the full Browse.Item collection instead of the limited RecentlyAdded collection, with a fresh historical cursor.
+
 ## 0.5.2 — limited-range compatibility videos
 
 - Convert full-range input pixels to limited range and signal the output range explicitly, preserving strict video validation.

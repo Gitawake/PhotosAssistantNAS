@@ -41,7 +41,7 @@ class WorkerTests(unittest.TestCase):
                'level':31,'width':720,'height':1280,'color_transfer':'bt709'}
         for pixel_format,expected in (('yuv420p',True),('yuvj420p',False)):
             video['pix_fmt']=pixel_format
-            with mock.patch.object(decoder,'run',return_value=json.dumps({'streams':[video]})):
+            with mock.patch.object(decoder,'run',return_value=json.dumps({'streams':[video],'format':{'format_name':'mov,mp4,m4a,3gp,3g2,mj2'}})):
                 self.assertEqual(decoder.compatible_video(Path('/work/out.mp4'),Path('/work')),expected)
 
     def test_duration_and_output_budget(self):
