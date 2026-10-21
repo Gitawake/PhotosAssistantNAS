@@ -2,12 +2,27 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest import mock
+from types import SimpleNamespace
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'src/photos_assistant'))
-from worker import Decoder,atomic_json
+from worker import Decoder,atomic_json,video_budget,require_space,FREE_HEADROOM
 
 
 class WorkerTests(unittest.TestCase):
+    def test_duration_and_output_budget(self):
+        for duration in (0,-1,21601,float('nan'),float('inf')):
+            with self.assertRaises(ValueError): video_budget(duration)
+        self.assertLess(video_budget(60),2*1024**3)
+        self.assertGreater(video_budget(21600),16*1024**3)
+    def test_space_guard_and_running_process_cleanup(self):
+        with mock.patch('worker.shutil.disk_usage',return_value=SimpleNamespace(free=FREE_HEADROOM-1)):
+            with self.assertRaises(RuntimeError): require_space('/unused')
+            child=mock.Mock(pid=123)
+            decoder=Decoder('/runtime');decoder.nested=True
+            with mock.patch('worker.subprocess.Popen',return_value=child):
+                with self.assertRaises(RuntimeError): decoder.run('ffmpeg','ffmpeg',[],Path('/unused'))
+            child.kill.assert_called_once();child.wait.assert_called_once()
     def test_state_is_private(self):
         with tempfile.TemporaryDirectory() as folder:
             path=Path(folder)/'state.json';atomic_json(path,{'cursor':0})

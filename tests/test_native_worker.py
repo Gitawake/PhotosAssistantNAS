@@ -5,6 +5,8 @@ import tempfile
 import unittest
 from unittest import mock
 import json
+import os
+import errno
 from types import SimpleNamespace
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'src/photos_assistant'))
@@ -17,6 +19,39 @@ def entry(**changes):
     return result
 
 class NativeTests(unittest.TestCase):
+    def test_large_sparse_input_is_not_rejected_or_read_into_memory(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);source=root/'original.mp4'
+            with source.open('wb') as f: f.truncate(9*1024**3)
+            api=SimpleNamespace(open_original=lambda _:os.open(source,os.O_RDONLY))
+            def clone(out,request,original):
+                os.ftruncate(out,os.fstat(original).st_size)
+            with mock.patch.object(n.fcntl,'ioctl',side_effect=clone), mock.patch.object(n,'require_space'):
+                with n.stage_original(api,{'id':1,'filesize':source.stat().st_size},root/'snapshot.mp4') as verify:
+                    verify()
+                    self.assertEqual((root/'snapshot.mp4').stat().st_size,9*1024**3)
+                    with source.open('r+b') as f: f.write(b'x')
+                    with self.assertRaises(ValueError): verify()
+    def test_unsupported_clone_copies_without_changing_original(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);source=root/'original';source.write_bytes(b'original')
+            api=SimpleNamespace(open_original=lambda _:os.open(source,os.O_RDONLY))
+            with mock.patch.object(n.fcntl,'ioctl',side_effect=OSError(errno.EXDEV,'cross-device')), mock.patch.object(n,'require_space'):
+                with n.stage_original(api,{'id':1,'filesize':8},root/'snapshot') as verify:
+                    self.assertEqual((root/'snapshot').read_bytes(),b'original')
+                    (root/'snapshot').write_bytes(b'changed!');verify()
+                    self.assertEqual(source.read_bytes(),b'original')
+    def test_original_path_traversal_and_symlinks_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);(root/'Photos').mkdir();(root/'outside').write_bytes(b'x')
+            (root/'Photos/link.mp4').symlink_to(root/'outside')
+            api=n.NativePhotos('someone',root)
+            item={'_space':'SYNO.Foto','folder_id':1,'owner_user_id':2,'filename':'link.mp4'}
+            metadata={'folder':{'id':1,'owner_user_id':2,'name':'/'}}
+            with mock.patch.object(api,'call',return_value=metadata), mock.patch.object(n.pwd,'getpwnam',return_value=SimpleNamespace(pw_dir=str(root))):
+                with self.assertRaises(OSError): api.open_original(item)
+                item['filename']='../outside'
+                with self.assertRaises(ValueError): api.open_original(item)
     def test_missing_video_with_ready_thumbnails_is_processed(self):
         self.assertEqual(n.needs(entry()),(False,True))
     def test_existing_high_variant_never_overwritten(self):

@@ -5,6 +5,22 @@ from pathlib import Path
 import signal
 import subprocess
 import tempfile
+import math
+import shutil
+import time
+
+FREE_HEADROOM=4*1024**3
+MAX_OUTPUT_BYTES=16*1024**3
+
+def require_space(work, needed=0):
+    if shutil.disk_usage(work).free < FREE_HEADROOM+needed:
+        raise RuntimeError('Insufficient free space')
+
+def video_budget(duration):
+    if not math.isfinite(duration) or duration<=0 or duration>21600:
+        raise ValueError('Unsupported video duration')
+    # Two output copies during publication, bitrate allowance plus scratch.
+    return 2*math.ceil(duration*3000000/8)+1024**3
 
 class ApiError(Exception):
     def __init__(self, code):
@@ -27,7 +43,17 @@ class Decoder:
         process=subprocess.Popen([str(self.runtime/name/'bin'/executable),*map(str,args)],
             env=self.env(name,work),stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=not getattr(self,'nested',False))
         try:
-            out,err=process.communicate(timeout=timeout)
+            deadline=time.monotonic()+timeout
+            while True:
+                require_space(work)
+                remaining=deadline-time.monotonic()
+                if remaining<=0: raise subprocess.TimeoutExpired(executable,timeout)
+                try:
+                    out,err=process.communicate(timeout=min(5,remaining))
+                    break
+                except subprocess.TimeoutExpired:
+                    if time.monotonic()>=deadline: raise
+            require_space(work)
         except BaseException:
             (process.kill() if getattr(self,'nested',False) else os.killpg(process.pid,signal.SIGKILL));process.wait();raise
         if process.returncode: raise RuntimeError('%s failed (%s)' % (executable,process.returncode))
@@ -82,10 +108,7 @@ class Decoder:
         probe=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-select_streams','v:0',
             '-show_entries','stream=color_transfer:format=duration','-of','json',source],work))
         duration=float(probe.get('format',{}).get('duration',0))
-        if duration<=0 or duration>21600: raise ValueError('Unsupported video duration')
-        import shutil
-        if shutil.disk_usage(work).free < duration*2700000/8+4*1024**3:
-            raise RuntimeError('Insufficient space for video')
+        require_space(work,video_budget(duration))
         filters=[]
         if probe.get('streams',[{}])[0].get('color_transfer') in ('arib-std-b67','smpte2084'):
             filters.append('zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv')

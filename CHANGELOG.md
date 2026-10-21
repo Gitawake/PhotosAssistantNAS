@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Remove the 8 GiB input cap; prefer private reflink snapshots with a bounded-memory copy fallback.
+- Reserve disk space by expected output and check free space during decoding; retain isolation, source change checks and duration/CPU limits.
+
 ## 0.4.0 — experimental source preparation
 
 - SSH deployment with a private runtime and dedicated systemd service.
