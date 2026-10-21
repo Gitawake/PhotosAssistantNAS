@@ -19,28 +19,34 @@ def entry(**changes):
     return result
 
 class NativeTests(unittest.TestCase):
-    def test_large_sparse_input_is_not_rejected_or_read_into_memory(self):
+    def test_large_sparse_input_uses_readonly_fd_and_detects_changes(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);source=root/'original.mp4'
             with source.open('wb') as f: f.truncate(9*1024**3)
             api=SimpleNamespace(open_original=lambda _:os.open(source,os.O_RDONLY))
-            def clone(out,request,original):
-                os.ftruncate(out,os.fstat(original).st_size)
-            with mock.patch.object(n.fcntl,'ioctl',side_effect=clone), mock.patch.object(n,'require_space'):
-                with n.stage_original(api,{'id':1,'filesize':source.stat().st_size},root/'snapshot.mp4') as verify:
-                    verify()
-                    self.assertEqual((root/'snapshot.mp4').stat().st_size,9*1024**3)
-                    with source.open('r+b') as f: f.write(b'x')
-                    with self.assertRaises(ValueError): verify()
-    def test_unsupported_clone_copies_without_changing_original(self):
+            with n.open_input(api,{'filesize':source.stat().st_size}) as (fd,verify):
+                self.assertEqual(os.fstat(fd).st_size,9*1024**3)
+                with self.assertRaises(OSError): os.write(fd,b'x')
+                self.assertEqual(list(root.iterdir()),[source])
+                verify()
+                with source.open('r+b') as f: f.write(b'x')
+                with self.assertRaises(ValueError): verify()
+            with self.assertRaises(OSError): os.fstat(fd)
+    def test_writable_source_descriptor_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source=Path(folder)/'original';source.write_bytes(b'original')
+            api=SimpleNamespace(open_original=lambda _:os.open(source,os.O_RDWR))
+            with self.assertRaises(ValueError):
+                with n.open_input(api,{'filesize':8}): pass
+    def test_image_copy_fallback_preserves_original(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);source=root/'original';source.write_bytes(b'original')
             api=SimpleNamespace(open_original=lambda _:os.open(source,os.O_RDONLY))
-            with mock.patch.object(n.fcntl,'ioctl',side_effect=OSError(errno.EXDEV,'cross-device')), mock.patch.object(n,'require_space'):
-                with n.stage_original(api,{'id':1,'filesize':8},root/'snapshot') as verify:
-                    self.assertEqual((root/'snapshot').read_bytes(),b'original')
-                    (root/'snapshot').write_bytes(b'changed!');verify()
-                    self.assertEqual(source.read_bytes(),b'original')
+            with n.open_input(api,{'filesize':8}) as (fd,verify):
+                with mock.patch.object(n.fcntl,'ioctl',side_effect=OSError(errno.EXDEV,'cross-device')), mock.patch.object(n,'require_space'):
+                    with n.image_snapshot(fd,{'filesize':8},root/'snapshot'): pass
+                self.assertEqual((root/'snapshot').read_bytes(),b'original');verify()
+
     def test_original_path_traversal_and_symlinks_rejected(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);(root/'Photos').mkdir();(root/'outside').write_bytes(b'x')

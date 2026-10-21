@@ -7,10 +7,11 @@ from pathlib import Path, PurePosixPath
 import posixpath
 import tarfile
 import urllib.request
-from private_elf import private_elf
+from private_elf import private_elf, elf_needed
 
 VIDEO_LIBS = {'libdrm.so.2', 'libva.so.2', 'libOpenCL.so.1', 'libmfx.so.1',
-              'libva-drm.so.2', 'libvulkan.so.1', 'libexpat.so.1'}
+              'libva-drm.so.2', 'libvulkan.so.1', 'libexpat.so.1',
+              'libshaderc_shared.so.1', 'libvpl.so.2'}
 
 
 def sha256(path):
@@ -107,6 +108,12 @@ def append_runtime(output, name, package, policy):
                 if target not in selected:
                     selected.add(target)
                     pending.append(target)
+            elif name == 'videodriver' and member.isfile():
+                for library in elf_needed(payload.extractfile(member).read()):
+                    target='lib/'+library
+                    if target in members and target not in selected:
+                        selected.add(target)
+                        pending.append(target)
         for path in selected:
             seen = set()
             target = path
@@ -145,4 +152,5 @@ def append_runtime(output, name, package, policy):
                 raise ValueError('Unsupported dependency member type: ' + path)
             count += 1
     return {'package_info': metadata, 'files': count, 'private_payload_bytes': size,
-            'cleared_elf_search_paths': changes, 'nonfree_enabled': nonfree}
+            'cleared_elf_search_paths': changes, 'nonfree_enabled': nonfree,
+            'library_files': sorted(p for p in selected if p.startswith('lib/') and '.so' in posixpath.basename(p))}

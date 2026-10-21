@@ -41,7 +41,9 @@ class Decoder:
         return env
     def run(self, name, executable, args, work, timeout=180):
         process=subprocess.Popen([str(self.runtime/name/'bin'/executable),*map(str,args)],
-            env=self.env(name,work),stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=not getattr(self,'nested',False))
+            env=self.env(name,work),stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+            pass_fds=((self.source_fd,) if name=='ffmpeg' and hasattr(self,'source_fd') else ()),
+            start_new_session=not getattr(self,'nested',False))
         try:
             deadline=time.monotonic()+timeout
             while True:
@@ -67,15 +69,21 @@ class Decoder:
             for line in result.stdout.decode(errors='replace').splitlines():
                 if '/var/packages/' in line and str(self.runtime) not in line:
                     raise RuntimeError('Runtime resolves another package library')
+    def input_args(self, source):
+        if source=='fd:':
+            os.lseek(self.source_fd,0,os.SEEK_SET)
+            return ['-fd',str(self.source_fd),'-protocol_whitelist','fd','-i','fd:']
+        return ['-protocol_whitelist','file,pipe','-i',source]
+
     def generate(self, source, ext, work):
         input_path=str(source)+'[0]'
         if ext in ('.mov','.mp4','.m4v','.3g2','.3gp','.asf','.avi','.divx','.mpeg','.mpg','.mts','.m2t','.m2ts','.qt','.wmv','.xvid'):
             probe=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-select_streams','v:0',
-                '-show_entries','stream=codec_name,color_transfer','-of','json',source],work))
+                '-show_entries','stream=codec_name,color_transfer','-of','json',*self.input_args(source)],work))
             streams=probe.get('streams',[])
             if not streams: raise ValueError('No video stream')
             frame=work/'frame.jpg'
-            args=['-nostdin','-threads','2','-v','error','-y','-hwaccel','none','-ss','0','-protocol_whitelist','file,pipe','-i',source,'-frames:v','1']
+            args=['-nostdin','-threads','2','-v','error','-y','-hwaccel','none','-ss','0',*self.input_args(source),'-frames:v','1']
             if streams[0].get('color_transfer') in ('arib-std-b67','smpte2084'):
                 args+=['-vf','zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p']
             self.run('ffmpeg','ffmpeg',args+[frame],work);input_path=str(frame)
@@ -90,7 +98,7 @@ class Decoder:
     def compatible_video(self, source, work):
         """Conservative cross-device SDR MP4 baseline; container alone is insufficient."""
         probe=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-show_streams',
-            '-show_format','-of','json',source],work))
+            '-show_format','-of','json',*self.input_args(source)],work))
         videos=[s for s in probe.get('streams',[]) if s.get('codec_type')=='video'
                 and not s.get('disposition',{}).get('attached_pic')]
         audio=[s for s in probe.get('streams',[]) if s.get('codec_type')=='audio']
@@ -106,7 +114,7 @@ class Decoder:
 
     def transcode(self, source, work):
         probe=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-select_streams','v:0',
-            '-show_entries','stream=color_transfer:format=duration','-of','json',source],work))
+            '-show_entries','stream=color_transfer:format=duration','-of','json',*self.input_args(source)],work))
         duration=float(probe.get('format',{}).get('duration',0))
         require_space(work,video_budget(duration))
         filters=[]
@@ -117,7 +125,7 @@ class Decoder:
                   'setsar=1','format=yuv420p']
         dest=work/'compatible.mp4'
         self.run('ffmpeg','ffmpeg',['-nostdin','-v','error','-y','-hwaccel','none',
-            '-threads','2','-protocol_whitelist','file,pipe','-i',source,'-map','0:v:0','-map','0:a:0?',
+            '-threads','2',*self.input_args(source),'-map','0:v:0','-map','0:a:0?',
             '-map_metadata','-1','-map_chapters','-1','-vf',','.join(filters),
             '-c:v','libx264','-preset','veryfast','-crf','23','-maxrate','2500k','-bufsize','5000k',
             '-threads','2','-filter_threads','1','-pix_fmt','yuv420p','-fpsmax','30',

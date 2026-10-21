@@ -4,11 +4,11 @@
     "sha256": "6f87f098dc3eaf92df0ff8e97bbc7c5d7e6de002f535e07b7a014f9e0ea6fa16"
   },
   "ffmpeg": {
-    "url": "https://packages.synocommunity.com/ffmpeg/51/ffmpeg.v51.f42661%5Bapollolake-avoton-braswell-broadwell-broadwellnk-broadwellnkv2-broadwellntbap-bromolow-cedarview-denverton-epyc7002-geminilake-geminilakenk-grantley-icelaked-kvmx64-purley-r1000-r1000nk-v1000-v1000nk%5D.spk",
-    "sha256": "c255acbf7747227d354af96780399b421ec5cba533466d88847db52a92d16ca6"
+    "url": "https://packages.synocommunity.com/ffmpeg8/5/ffmpeg8.v5.f42661%5Bapollolake-avoton-braswell-broadwell-broadwellnk-broadwellnkv2-broadwellntbap-bromolow-cedarview-denverton-epyc7002-epyc7003-epyc7003ntb-geminilake-geminilakenk-grantley-icelaked-kvmx64-purley-r1000-r1000nk-3ee54102%5D.spk",
+    "sha256": "0aa83f873c614450a4db8749a1e1db73ee1b57c3a0a03cb8d288e02b153c84bc"
   },
   "videodriver": {
-    "url": "https://packages.synocommunity.com/synocli-videodriver/8/synocli-videodriver.v8.f42661%5Bapollolake-avoton-braswell-broadwell-broadwellnk-broadwellnkv2-broadwellntbap-bromolow-cedarview-denverton-epyc7002-geminilake-geminilakenk-grantley-icelaked-kvmx64-purley-r1000-r1000nk-v1000-v1000nk%5D.spk",
-    "sha256": "0db2073d70e1cd1cc67b384ffe9c71b9aa8e4465429e85336f7340da7f3f4c25"
+    "url": "https://packages.synocommunity.com/synocli-videodriver/9/synocli-videodriver.v9.f42661%5Bapollolake-avoton-braswell-broadwell-broadwellnk-broadwellnkv2-broadwellntbap-bromolow-cedarview-denverton-epyc7002-epyc7003-epyc7003ntb-geminilake-geminilakenk-grantley-icelaked-kvmx64-purley-0c5acb92%5D.spk",
+    "sha256": "26f4371e87b781ddde16dfd98e12d6ad892c301adb26cfee3eec3829087ab0bf"
   }
 }

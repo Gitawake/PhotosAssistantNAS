@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import os
 from unittest import mock
 from types import SimpleNamespace
 ROOT=Path(__file__).resolve().parents[1]
@@ -10,6 +11,19 @@ from worker import Decoder,atomic_json,video_budget,require_space,FREE_HEADROOM
 
 
 class WorkerTests(unittest.TestCase):
+    def test_fd_input_is_seekable_rewound_and_inherited_only_by_ffmpeg(self):
+        with tempfile.TemporaryFile() as source:
+            source.write(b'1234');source.flush()
+            decoder=Decoder('/runtime');decoder.source_fd=source.fileno();decoder.nested=True
+            args=decoder.input_args('fd:')
+            self.assertEqual(os.lseek(source.fileno(),0,os.SEEK_CUR),0)
+            self.assertEqual(args,['-fd',str(source.fileno()),'-protocol_whitelist','fd','-i','fd:'])
+            child=mock.Mock(returncode=0);child.communicate.return_value=(b'{}',b'')
+            with mock.patch('worker.subprocess.Popen',return_value=child) as start, mock.patch('worker.require_space'):
+                decoder.run('ffmpeg','ffprobe',args,Path('/unused'))
+                self.assertEqual(start.call_args.kwargs['pass_fds'],(source.fileno(),))
+                decoder.run('imagemagick','convert',[],Path('/unused'))
+                self.assertEqual(start.call_args.kwargs['pass_fds'],())
     def test_duration_and_output_budget(self):
         for duration in (0,-1,21601,float('nan'),float('inf')):
             with self.assertRaises(ValueError): video_budget(duration)

@@ -1,6 +1,12 @@
 # PhotosAssistantNAS
 
-在 NAS 上补齐 Synology Photos 的 HEIC/HEIF 预览、视频缩略图和兼容视频副本。通过 SSH 安装，不依赖客户端 Image Assistant、Container Manager 或独立编解码套件。
+**让群晖相册的 HEIC/HEVC 处理，重新回到 NAS。**
+
+PhotosAssistantNAS 为 Synology Photos 补回服务端媒体处理能力：在 NAS 上生成 HEIC/HEIF 照片预览、视频缩略图及 H.264/AAC 兼容视频副本，承担原本需要客户端 Image Assistant 完成的这些工作。通过 SSH 一键部署，无需 Photos 账号、密码或 OTP，不依赖 Container Manager。
+
+在 DSM 7.2.2 前后相关调整中，群晖将部分媒体处理转向终端设备，Photos 的 HEIC/HEVC 预览与兼容副本因此可能需要客户端协助。本项目的目标是让 NAS 自己完成这部分后台工作：原片仍在原处，相册仍用 Synology Photos。背景见 [群晖官方说明](https://www.synology.com/en-us/products/status/eol-video-codec-support) 和 [Image Assistant 常见问题](https://kb.synology.com/en-global/DSM/tutorial/Frequently_asked_questions_about_Synology_Image_Assistant)。
+
+它补齐的是相册的预览和兼容副本生成，不是还原全部旧版 DSM 功能，也不提供实时转码播放。
 
 **实验性项目，目前仅发布源码。** 已验证 x86_64、DSM 7.4.1-90080 Update 1、Synology Photos **1.9.1-10928**。使用未公开的本机 Photos 接口；Photos 升级后会拒绝继续处理，不能视为任意 DSM 7 或未来版本通用。项目与 Synology 无隶属关系。
 
@@ -14,6 +20,18 @@
 - 生成 JPEG 与最高 720p 范围的 H.264/AAC MP4；不是实时转码。编码、码率、帧率及 HDR 映射不保证与官方 Assistant 完全相同。
 - root 协调进程调用 DSM 本机接口；解码子进程使用未注册的数值 UID、独立网络命名空间、禁止提权并限制资源。详细边界见 [安全说明](SECURITY.md)。
 - 卸载移除本服务程序、systemd 注册、运行状态与临时文件，**保留 Photos 已接收的预览和兼容视频**。系统审计日志、用户自行保留的下载文件不会被抹除。
+
+## 私有依赖
+
+截至 2026-10-21，选择 SynoCommunity 官方提供的最新适用 DSM x64 构建，固定下载地址及 SHA256（见 `vendor/lock.json`）：
+
+| 依赖 | 版本 | 用途 |
+| --- | --- | --- |
+| FFmpeg / FFprobe | 8.1.3-5 | 只读句柄视频输入、缩略图和 H.264/AAC 兼容输出 |
+| ImageMagick | 7.1.2-16 | HEIC/HEIF 与 JPEG 缩略图 |
+| SynoCli Video Drivers | 1.5-9 | 私有加载所需动态库及其依赖闭包 |
+
+仅提取所需文件，不执行这些套件的安装脚本。系统自带 Python、systemd、glibc 和 DSM 本机接口不由本项目升级；不逐个混换上游构建内的底层库，以免破坏 ABI 兼容。依赖更新通过新的已验证源码提交进行，不静默追随最新版。
 
 ## SSH 在线一键安装
 
@@ -52,7 +70,7 @@ curl -fsSL https://raw.githubusercontent.com/Gitawake/PhotosAssistantNAS/main/un
 python3 tools/build.py
 ```
 
-构建脚本从锁定的 SynoCommunity 官方地址下载三个原始 SPK，校验 SHA256，仅提取运行时文件，**不执行 SPK 安装脚本、不依赖本地旧版 SPK**。结果位于 `dist/PhotosAssistantNAS-0.4.0-x64.private.tar`。
+构建脚本从锁定的 SynoCommunity 官方地址下载三个原始 SPK，校验 SHA256，仅提取运行时文件，**不执行 SPK 安装脚本、不依赖本地旧版 SPK**。结果位于 `dist/PhotosAssistantNAS-0.5.0-x64.private.tar`。
 
 **这个构建结果仅供个人使用，不应上传到公开 Releases。** 当前锁定 FFmpeg 启用了 `--enable-gpl --enable-version3 --enable-nonfree`。公开分发前需要更换为可再分发的构建，并逐项完成来源、许可证及对应源码审计，不能只附几份许可证。见 [分发说明](docs/distribution.md)。
 
@@ -75,7 +93,7 @@ sudo /bin/python3 -I /volume1/@PhotosAssistantNAS/uninstall.py
 
 也可在解压后的安装目录执行 `sudo sh uninstall.sh`。安装到其他卷时，卸载命令也加 `--volume /volume2`。
 
-不再设置固定源文件大小上限；视频最长 6 小时。优先在同一文件系统上用 Btrfs 写时复制创建隔离输入，不完整复制源视频数据；ext4、跨文件系统或不支持克隆时，自动回退为 1 MiB 分块复制，需要额外源文件空间。即使两边都是 Btrfs，共享文件夹或子卷的挂载边界也可能导致克隆失败；以运行日志中的 `source=reflink` 或 `source=copy` 为准。FFmpeg 始终流式读取，不将整份视频载入内存。按时长与目标码率预留转码、发布和临时空间，运行中每 5 秒检查至少 4 GiB 可用空间，不足则中止；这不是磁盘空间配额，其他程序仍可能同时写满磁盘。单个生成文件最多 16 GiB，限制线程和优先级，失败项目延迟一小时重试。兼容副本会额外占用容量；不要为清理副本而删除整个 `@eaDir`。
+视频不设置固定源文件大小上限，最长 6 小时。root 只读打开原视频，将一个文件句柄传给隔离进程；私有 FFmpeg 使用可随机定位的 `fd:` 协议流式读取，**不复制或克隆整份源视频、不修改原文件权限，也不依赖 Btrfs**。HEIC/HEIF 图片仍使用私有临时输入（优先克隆，不支持时分块复制）。按时长与目标码率预留兼容输出、发布和临时空间，解码期间每 5 秒检查至少 4 GiB 可用空间，不足则中止；其他程序仍可能同时写满磁盘，这不是空间配额。单个生成文件最多 16 GiB，保留线程、优先级限制及失败一小时后重试。兼容副本会额外占用容量；不要为清理副本而删除整个 `@eaDir`。
 
 ## 测试、兼容性与贡献
 
@@ -91,3 +109,7 @@ python3 tools/package_source.py
 - [许可证及来源](THIRD_PARTY.md)：项目源码采用 MIT；第三方运行时不因此变为 MIT。
 
 源码包只包含公开文件，不包含私有运行时、实验安装包或原始调试记录。完整数据风险说明见 [DISCLAIMER.md](DISCLAIMER.md)。
+
+## 项目灵感与致谢
+
+本项目的初始灵感来自 [Gitawake/synology-photos-server-side-thumbnailgen](https://github.com/Gitawake/synology-photos-server-side-thumbnailgen)：将相册媒体处理放回 NAS 服务端。感谢原作者 octavianx、Gitawake 仓库维护者，以及 FFmpeg、ImageMagick、SynoCommunity 和所有底层依赖的贡献者。原有 MIT 版权声明已保留；完整来源、依赖引用和致谢见 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md)，第三方使用与许可边界见 [THIRD_PARTY.md](THIRD_PARTY.md)。

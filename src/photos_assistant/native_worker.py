@@ -138,37 +138,37 @@ def fingerprint(info):
     return (info.st_dev,info.st_ino,info.st_size,info.st_mtime_ns,info.st_ctime_ns)
 
 @contextlib.contextmanager
-def stage_original(api,entry,destination):
-    """Private reflink snapshot; bounded-memory copy only when cloning is unsupported."""
+def open_input(api,entry):
+    """Keep one read-only original FD open; it is the decoder's only source grant."""
     fd=api.open_original(entry)
     try:
         info=os.fstat(fd)
         if not stat.S_ISREG(info.st_mode) or info.st_size<=0 or info.st_size!=int(entry['filesize']):
             raise ValueError('Original size or type changed')
-        require_space(destination.parent,1024**3)
-        with destination.open('xb') as output:
-            try:
-                fcntl.ioctl(output.fileno(),0x40049409,fd)  # Linux FICLONE: no source write.
-                method='reflink'
-            except OSError as error:
-                if error.errno not in (errno.EOPNOTSUPP,errno.EXDEV,errno.ENOTTY,errno.EINVAL,errno.ENOSYS): raise
-                output.seek(0);output.truncate(0)
-                require_space(destination.parent,info.st_size+1024**3)
-                with os.fdopen(os.dup(fd),'rb') as source:
-                    remaining=info.st_size
-                    while remaining:
-                        require_space(destination.parent,1024**3)
-                        chunk=source.read(min(1024*1024,remaining))
-                        if not chunk: raise ValueError('Original truncated')
-                        output.write(chunk);remaining-=len(chunk)
-                method='copy'
+        if fcntl.fcntl(fd,fcntl.F_GETFL)&os.O_ACCMODE!=os.O_RDONLY:
+            raise ValueError('Original descriptor is not read-only')
         expected=fingerprint(info)
         def verify():
             if fingerprint(os.fstat(fd))!=expected: raise ValueError('Original changed while decoding')
-        verify()
-        logging.info('item=%s source=%s bytes=%s',entry['id'],method,info.st_size)
-        yield verify
+        yield fd,verify
     finally: os.close(fd)
+
+@contextlib.contextmanager
+def image_snapshot(fd,entry,destination):
+    # ImageMagick has no seekable FD protocol. Images retain private staging.
+    with destination.open('xb') as output:
+        try: fcntl.ioctl(output.fileno(),0x40049409,fd)
+        except OSError as error:
+            if error.errno not in (errno.EOPNOTSUPP,errno.EXDEV,errno.ENOTTY,errno.EINVAL,errno.ENOSYS): raise
+            output.seek(0);output.truncate(0)
+            require_space(destination.parent,int(entry['filesize'])+1024**3)
+            remaining=int(entry['filesize'])
+            while remaining:
+                require_space(destination.parent,1024**3)
+                chunk=os.read(fd,min(1024*1024,remaining))
+                if not chunk: raise ValueError('Original truncated')
+                output.write(chunk);remaining-=len(chunk)
+    yield
 
 def process(api,entry,state,package,commit=True):
     preview,video=needs(entry)
@@ -181,12 +181,20 @@ def process(api,entry,state,package,commit=True):
         job=Path(d);os.chmod(job,0o711)
         decode=job/'decode';decode.mkdir(mode=0o700);os.chown(decode,package.pw_uid,package.pw_gid)
         source=decode/('source'+ext)
-        with stage_original(api,entry,source) as verify_original:
-            os.chown(source,package.pw_uid,package.pw_gid);os.chmod(source,0o400)
+        with open_input(api,entry) as (source_fd,verify_original):
             cmd=['/bin/python3',str(Path(__file__).with_name('decode_job.py')),str(decode),
                  str(int(preview)),str(int(video))]
+            inherited=()
+            if ext in VIDEO_EXT:
+                cmd += [str(source_fd),ext];inherited=(source_fd,)
+                logging.info('item=%s source=readonly-fd bytes=%s',item,entry['filesize'])
+            else:
+                with image_snapshot(source_fd,entry,source): pass
+                verify_original()
+                os.chown(source,package.pw_uid,package.pw_gid);os.chmod(source,0o400)
             child=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True,
-                                   env={'PATH':'/usr/bin:/bin','LANG':'C'},preexec_fn=sandbox(package.pw_uid,package.pw_gid))
+                                   pass_fds=inherited,env={'PATH':'/usr/bin:/bin','LANG':'C'},
+                                   preexec_fn=sandbox(package.pw_uid,package.pw_gid))
             try:
                 _,err=child.communicate(timeout=22000)
             except BaseException:

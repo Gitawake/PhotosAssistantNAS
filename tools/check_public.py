@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-ROOT_FILES = {'README.md', 'LICENSE', 'NOTICE.md', 'THIRD_PARTY.md', 'DISCLAIMER.md',
+ROOT_FILES = {'README.md', 'LICENSE', 'NOTICE.md', 'THIRD_PARTY.md', 'DISCLAIMER.md', 'ACKNOWLEDGEMENTS.md',
               'SECURITY.md', 'CONTRIBUTING.md', 'CHANGELOG.md', '.gitignore', '.gitattributes',
               'bootstrap.sh', 'uninstall.sh'}
 PUBLIC_DIRS = {'src', 'scripts', 'tools', 'tests', 'docs', 'licenses', '.github'}

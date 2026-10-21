@@ -10,7 +10,7 @@ from unittest import mock
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 import runtime
-from private_elf import private_elf
+from private_elf import private_elf, elf_needed
 
 
 def spk(path,members):
@@ -28,6 +28,22 @@ def spk(path,members):
 
 
 class RuntimeTests(unittest.TestCase):
+    def test_driver_dependency_closure(self):
+        def needed(data): return ['dependency.so'] if data==b'shader' else []
+        with mock.patch.object(runtime,'elf_needed',side_effect=needed):
+            _,files,_=self.append({'lib/libshaderc_shared.so.1':b'shader',
+                'lib/dependency.so':b'required','lib/unrelated.so':b'excluded'},'videodriver')
+        self.assertIn('runtime/videodriver/lib/dependency.so',files)
+        self.assertNotIn('runtime/videodriver/lib/unrelated.so',files)
+    def test_elf_dependency_string_table(self):
+        ident=b'\x7fELF\x02\x01'+b'\0'*10
+        header=struct.pack('<16sHHIQQQIHHHHHH',ident,3,62,1,0,64,0,0,64,56,2,0,0,0)
+        strings=b'\0libneeded.so\0'
+        size=240+len(strings)
+        load=struct.pack('<IIQQQQQQ',1,0,0,0x1000,0,size,size,8)
+        dynamic=struct.pack('<IIQQQQQQ',2,0,176,0,0,64,64,8)
+        tags=struct.pack('<QQQQQQQQ',1,1,5,0x1000+240,10,len(strings),0,0)
+        self.assertEqual(elf_needed(header+load+dynamic+tags+strings),['libneeded.so'])
     def append(self,members,name='imagemagick'):
         with tempfile.TemporaryDirectory() as folder:
             path=Path(folder)/'fixture.spk';spk(path,members)

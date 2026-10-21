@@ -8,7 +8,7 @@ import tarfile
 from runtime import add_bytes, append_runtime, download_locked, sha256
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.4.0'
+VERSION = '0.5.0'
 
 
 def main():
@@ -34,7 +34,7 @@ def main():
             add_bytes(archive, 'uninstall.py', (ROOT / 'scripts/uninstall.py').read_bytes())
             for path in sorted((ROOT / 'licenses').iterdir()):
                 add_bytes(archive, 'licenses/' + path.name, path.read_bytes())
-            for name in ('LICENSE', 'NOTICE.md', 'THIRD_PARTY.md', 'DISCLAIMER.md'):
+            for name in ('LICENSE', 'NOTICE.md', 'THIRD_PARTY.md', 'DISCLAIMER.md', 'ACKNOWLEDGEMENTS.md'):
                 add_bytes(archive, name, (ROOT / name).read_bytes())
             add_bytes(archive, 'runtime-manifest.json', json.dumps(manifest, sort_keys=True, indent=2).encode())
     checksum_name = payload.name + '.sha256'

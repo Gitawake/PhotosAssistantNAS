@@ -1,9 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — direct video input
 
-- Remove the 8 GiB input cap; prefer private reflink snapshots with a bounded-memory copy fallback.
-- Reserve disk space by expected output and check free space during decoding; retain isolation, source change checks and duration/CPU limits.
+- Video decoding/transcoding reads an inherited read-only original descriptor using FFmpeg's seekable `fd:` protocol. No full source-video copy, Btrfs clone or original permission change.
+- Remove the 8 GiB input cap. Reserve space from expected outputs and monitor free space during decoding; preserve duration, CPU and memory limits.
+- Update pinned private dependencies to the latest available validated DSM x64 builds; resolve additional video-library dependencies without installing upstream packages.
+- Keep private image staging, source mutation checks and retained Photos outputs on uninstall.
 
 ## 0.4.0 — experimental source preparation
 
