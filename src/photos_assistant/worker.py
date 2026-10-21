@@ -68,7 +68,7 @@ class Decoder:
             require_space(work)
         except BaseException:
             (process.kill() if getattr(self,'nested',False) else os.killpg(process.pid,signal.SIGKILL));process.wait();raise
-        if process.returncode: raise RuntimeError('%s failed (%s)' % (executable,process.returncode))
+        if process.returncode: raise subprocess.CalledProcessError(process.returncode,executable)
         return out
     def audit(self, work):
         for name,exe in [('imagemagick','magick'),('ffmpeg','ffmpeg'),('ffmpeg','ffprobe')]:
@@ -136,14 +136,14 @@ class Decoder:
         if probe.get('streams',[{}])[0].get('color_transfer') in ('arib-std-b67','smpte2084'):
             filters.append('zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv')
         # Landscape <=1280x720, portrait <=720x1280; never upscale.
-        filters+=['scale=w=\'if(gte(iw,ih),min(iw,1280),min(iw,720))\':h=\'if(gte(iw,ih),min(ih,720),min(ih,1280))\':force_original_aspect_ratio=decrease:force_divisible_by=2',
+        filters+=['scale=w=\'if(gte(iw,ih),min(iw,1280),min(iw,720))\':h=\'if(gte(iw,ih),min(ih,720),min(ih,1280))\':force_original_aspect_ratio=decrease:force_divisible_by=2:in_range=auto:out_range=tv',
                   'setsar=1','format=yuv420p']
         dest=work/'compatible.mp4'
         self.run('ffmpeg','ffmpeg',['-nostdin','-v','error','-y','-hwaccel','none',
             '-threads','2',*self.input_args(source),'-map','0:v:0','-map','0:a:0?',
             '-map_metadata','-1','-map_chapters','-1','-vf',','.join(filters),
             '-c:v','libx264','-preset','veryfast','-crf','23','-maxrate','2500k','-bufsize','5000k',
-            '-threads','2','-filter_threads','1','-pix_fmt','yuv420p','-fpsmax','30',
+            '-threads','2','-filter_threads','1','-pix_fmt','yuv420p','-color_range','tv','-fpsmax','30',
             '-c:a','aac','-b:a','128k','-ac','2','-movflags','+faststart',dest],work,timeout=21600)
         if not self.compatible_video(dest,work): raise ValueError('Generated video failed compatibility check')
         result=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-show_entries','format=duration','-of','json',dest],work))

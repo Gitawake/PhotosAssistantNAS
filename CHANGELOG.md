@@ -2,6 +2,11 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.5.2 — limited-range compatibility videos
+
+- Convert full-range input pixels to limited range and signal the output range explicitly, preserving strict video validation.
+- Record fixed decoder failure categories without exposing media paths or raw decoder errors.
+
 ## 0.5.1 — direct HEIF image input
 
 - Read HEIC/HEIF/HIF through an inherited read-only descriptor and libheif reader callbacks; import pixels directly into MagickWand. No source-image staging or encoded intermediate.

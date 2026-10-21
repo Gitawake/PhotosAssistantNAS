@@ -3,6 +3,7 @@ import sys
 import tempfile
 import unittest
 import os
+import json
 from unittest import mock
 from types import SimpleNamespace
 ROOT=Path(__file__).resolve().parents[1]
@@ -34,6 +35,15 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual(result, {label:Path('/work')/(label+'.jpg') for label in ('SM','M','XL')})
             self.assertEqual(run.call_args.args,('heic','heic_fd',[5,Path('/work'),4032,3024],Path('/work')))
         with self.assertRaises(ValueError): decoder.generate(Path('/source.heic'),'.heic',Path('/work'))
+    def test_full_range_output_is_rejected_by_compatibility_guard(self):
+        decoder=Decoder('/runtime')
+        video={'codec_type':'video','codec_name':'h264','pix_fmt':'yuv420p',
+               'level':31,'width':720,'height':1280,'color_transfer':'bt709'}
+        for pixel_format,expected in (('yuv420p',True),('yuvj420p',False)):
+            video['pix_fmt']=pixel_format
+            with mock.patch.object(decoder,'run',return_value=json.dumps({'streams':[video]})):
+                self.assertEqual(decoder.compatible_video(Path('/work/out.mp4'),Path('/work')),expected)
+
     def test_duration_and_output_budget(self):
         for duration in (0,-1,21601,float('nan'),float('inf')):
             with self.assertRaises(ValueError): video_budget(duration)

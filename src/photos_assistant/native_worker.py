@@ -176,7 +176,12 @@ def process(api,entry,state,package,commit=True):
                 _,err=child.communicate(timeout=22000)
             except BaseException:
                 os.killpg(child.pid,signal.SIGKILL);child.wait();raise
-            if child.returncode: raise RuntimeError('Decoder failed')
+            if child.returncode:
+                reasons={b'DECODER_FAILURE='+reason.encode():reason for reason in
+                         ('compatibility','duration','timeout','command','other')}
+                reason=next((reasons[line] for line in err.splitlines() if line in reasons),'unknown')
+                logging.warning('item=%s decoder_failure=%s exit=%s',item,reason,child.returncode)
+                raise RuntimeError('Decoder failed')
             verify_original()
             fresh=api.get(entry['_space'],item)
             if fresh.get('additional',{}).get('thumbnail',{}).get('unit_id')!=unit: raise ValueError('Item changed')

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Invoked only after privilege drop and network isolation."""
 import os
+import subprocess
 from pathlib import Path
 import sys
 from worker import Decoder
@@ -14,4 +15,13 @@ def main():
     if preview: decoder.generate(source,ext,work)
     if video: decoder.transcode(source,work)
 
-if __name__=='__main__': main()
+if __name__=='__main__':
+    try: main()
+    except Exception as error:
+        # Report only a fixed category: decoder stderr can contain private paths.
+        reason=('compatibility' if str(error)=='Generated video failed compatibility check' else
+                'duration' if str(error)=='Incomplete transcoded video' else
+                'timeout' if isinstance(error,subprocess.TimeoutExpired) else
+                'command' if isinstance(error,subprocess.CalledProcessError) else 'other')
+        print('DECODER_FAILURE='+reason,file=sys.stderr)
+        sys.exit(1)

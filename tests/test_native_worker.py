@@ -49,9 +49,12 @@ class NativeTests(unittest.TestCase):
                 self.assertEqual(os.read(fd,8),b'original')
                 with self.assertRaises(OSError): os.write(fd,b'x')
                 self.assertFalse(any(root.rglob('source.*')))
-                return SimpleNamespace(communicate=lambda **_: (b'',b''),returncode=1)
+                return SimpleNamespace(communicate=lambda **_: (b'',b'/private/media/secret.heic\nDECODER_FAILURE=compatibility\n'),returncode=1)
             with mock.patch.object(n,'require_space'), mock.patch.object(n.os,'chown'), mock.patch.object(n.subprocess,'Popen',side_effect=start):
-                with self.assertRaises(RuntimeError): n.process(api,item,root,SimpleNamespace(pw_uid=1,pw_gid=1))
+                with self.assertLogs(level='WARNING') as logs:
+                    with self.assertRaises(RuntimeError): n.process(api,item,root,SimpleNamespace(pw_uid=1,pw_gid=1))
+                self.assertIn('decoder_failure=compatibility',' '.join(logs.output))
+                self.assertNotIn('secret.heic',' '.join(logs.output))
             self.assertEqual(list(root.iterdir()),[source])
             self.assertEqual(source.read_bytes(),b'original')
 

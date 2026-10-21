@@ -46,7 +46,7 @@ def main():
     if not Path('/usr/syno/bin/synowebapi').is_file(): raise RuntimeError('DSM local API is unavailable')
     subprocess.run(['/bin/systemctl','--version'],check=True,stdout=subprocess.PIPE)
     here=Path(__file__).resolve().parent
-    bundle=here/'PhotosAssistantNAS-x64-0.5.1.tar.gz'
+    bundle=here/'PhotosAssistantNAS-x64-0.5.2.tar.gz'
     expected=(here/(bundle.name+'.sha256')).read_text().split()[0]
     if hashlib.sha256(bundle.read_bytes()).hexdigest()!=expected: raise RuntimeError('Payload checksum mismatch')
     root=Path(args.volume)/'@PhotosAssistantNAS'
@@ -120,7 +120,7 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 '''.format(command=' '.join(command))
             UNIT_PATH.write_text(unit);os.chmod(UNIT_PATH,0o644)
-            marker.write_text(json.dumps({'schema':1,'root':str(root),'version':'0.5.1','unit':UNIT},indent=2))
+            marker.write_text(json.dumps({'schema':1,'root':str(root),'version':'0.5.2','unit':UNIT},indent=2))
             os.chmod(marker,0o600)
             (root/'uninstall.py').write_bytes((app/'uninstall.py').read_bytes());os.chmod(root/'uninstall.py',0o700)
             run('/bin/systemctl','daemon-reload')
