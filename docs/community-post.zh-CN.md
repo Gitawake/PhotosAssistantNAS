@@ -6,11 +6,15 @@
 
 ## 标题
 
-让群晖 NAS 自己生成 HEIC/HEVC 相册预览：PhotosAssistantNAS，无需客户端 Assistant 协助这些任务
+网页或 SMB 导入群晖相册，不想装桌面 Assistant？让 NAS 自己补齐 HEIC/HEVC 预览和兼容视频
 
 ## 正文
 
 群晖将部分 HEIC/HEVC 处理转移到终端设备后，我希望 NAS 能重新承担相册预览与兼容视频副本生成，因此做了一个实验性开源项目 **PhotosAssistantNAS**。
+
+主要场景是：通过 Photos 网页、File Station 或 SMB 导入相册，不想再安装桌面 Image Assistant 及浏览器扩展。素材进入 Photos 索引后，由 NAS 后台补齐受支持的缺失资源，不必保持客户端运行；NAS 其他未被 Photos 索引的目录不在处理范围。
+
+如果主要用手机备份，而且预览、播放已经正常，通常不需要本项目。手机 App 的 **更多 → 设置 → Image Assistant** 开关可以在浏览时生成 JPEG 预览，也能处理网页/SMB 导入的项目；但手机端不生成压缩兼容视频，播放仍依赖手机解码能力。[群晖官方对此有明确说明](https://kb.synology.com/en-eu/DSM/tutorial/Unable_to_view_HEIC_photos_HEVC_videos_on_Synology_Photos)。
 
 项目地址：[Gitawake/PhotosAssistantNAS](https://github.com/Gitawake/PhotosAssistantNAS)
 

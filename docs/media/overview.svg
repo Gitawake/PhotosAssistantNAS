@@ -17,13 +17,14 @@
     <text x="50" y="140" fill="#b9ccd9" font-size="19">HEIC / HEIF previews · video thumbnails · H.264 / AAC compatibility copies</text>
 
     <rect x="50" y="185" width="310" height="210" rx="16" fill="#1b3446" stroke="#3a5667"/>
-    <text x="74" y="220" fill="#71d7c0" font-size="14" font-weight="700">01 / SYNOLOGY PHOTOS</text>
+    <text x="74" y="220" fill="#71d7c0" font-size="14" font-weight="700">01 / WEB · FILE STATION · SMB</text>
     <rect x="75" y="242" width="65" height="49" rx="7" fill="#294b60"/>
     <path d="M81 282 L98 262 L110 273 L120 263 L134 282 Z" fill="#9cdccf"/>
     <circle cx="125" cy="253" r="5" fill="#e5cf91"/>
     <text x="156" y="270" fill="#f7fbff" font-size="22" font-weight="700">Your originals</text>
     <text x="74" y="321" fill="#c6d6df" font-size="17">Photos indexes new media.</text>
     <text x="74" y="351" fill="#c6d6df" font-size="17">Files, names and folders stay.</text>
+    <text x="74" y="381" fill="#c6d6df" font-size="15">Inside Photos-indexed folders.</text>
 
     <path d="M370 286 H424" stroke="#71d7c0" stroke-width="3" marker-end="url(#arrow)"/>
     <rect x="440" y="185" width="320" height="210" rx="16" fill="#1b3446" stroke="#71d7c0" stroke-width="2"/>

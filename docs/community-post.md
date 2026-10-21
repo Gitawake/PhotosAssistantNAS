@@ -6,11 +6,15 @@ Use the title and body below when introducing the project. This is a draft, not 
 
 ## Title
 
-I built a NAS-side worker for Synology Photos HEIC/HEVC previews — no client Assistant for these tasks
+Web or SMB uploads to Synology Photos? Generate HEIC/HEVC previews on the NAS without desktop Image Assistant
 
 ## Body
 
 After Synology moved some HEIC/HEVC processing to end devices, I wanted my NAS to handle preview and compatibility-copy generation again. I made **PhotosAssistantNAS**, an experimental open-source worker for Synology Photos.
+
+The main use case is importing through the Photos web portal, File Station or SMB without installing desktop Image Assistant and its browser extension. Once media is indexed by Photos, the NAS can fill supported missing resources in the background without a client remaining active. It does not process arbitrary folders elsewhere on the NAS.
+
+If you mainly back up from your phone and previews/playback already work, you probably do not need this. The mobile app's **More → Settings → Image Assistant** switch can generate JPEG previews while browsing, even for web/SMB imports, but it does not generate compressed compatibility videos; playback depends on the phone's decoder. [Synology documents this distinction](https://kb.synology.com/en-eu/DSM/tutorial/Unable_to_view_HEIC_photos_HEVC_videos_on_Synology_Photos).
 
 Repository: [Gitawake/PhotosAssistantNAS](https://github.com/Gitawake/PhotosAssistantNAS)
 

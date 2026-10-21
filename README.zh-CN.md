@@ -6,6 +6,8 @@
 
 PhotosAssistantNAS 为 Synology Photos 补回服务端媒体处理能力：在 NAS 上生成 HEIC/HEIF 照片预览、视频缩略图及 H.264/AAC 兼容视频副本，承担原本需要客户端 Image Assistant 完成的这些工作。通过 SSH 一键部署，无需 Photos 账号、密码或 OTP，不依赖 Container Manager。
 
+**主要适用于通过 Photos 网页、File Station 或 SMB 导入相册的场景：** 让 NAS 自己补齐缺失资源，不必安装桌面 Image Assistant 及浏览器扩展，也不必让客户端持续运行来处理相册。
+
 在 DSM 7.2.2 前后相关调整中，群晖将部分媒体处理转向终端设备，Photos 的 HEIC/HEVC 预览与兼容副本因此可能需要客户端协助。本项目的目标是让 NAS 自己完成这部分后台工作：原片仍在原处，相册仍用 Synology Photos。背景见 [群晖官方说明](https://www.synology.com/en-us/products/status/eol-video-codec-support) 和 [Image Assistant 常见问题](https://kb.synology.com/en-global/DSM/tutorial/Frequently_asked_questions_about_Synology_Image_Assistant)。
 
 它补齐的是相册的预览和兼容副本生成，不是还原全部旧版 DSM 功能，也不提供实时转码播放。
@@ -13,6 +15,19 @@ PhotosAssistantNAS 为 Synology Photos 补回服务端媒体处理能力：在 N
 **实验性项目，目前仅发布源码。** 已验证 x86_64、DSM 7.4.1-90080 Update 1、Synology Photos **1.9.1-10928**。使用未公开的本机 Photos 接口；Photos 升级后会拒绝继续处理，不能视为任意 DSM 7 或未来版本通用。项目与 Synology 无隶属关系。
 
 > **数据损坏风险：** 设计上保留原件，不代表不会发生损坏或丢失。缺陷、接口变化、权限错误、断电及存储故障都可能影响数据和相册可用性。部署前请完成独立备份并验证恢复能力，先用少量非重要素材测试。详见 [数据安全免责声明](DISCLAIMER.zh-CN.md)。
+
+## 哪些用户适合使用
+
+| 使用方式 | 本项目的作用 |
+| --- | --- |
+| 通过 Photos 网页上传 | 不想安装桌面 Image Assistant 和浏览器扩展，希望 NAS 自己生成预览与兼容视频 |
+| 通过 File Station、SMB 或其他方式复制素材 | 素材进入 Photos 已索引目录后，希望 NAS 后台自动补齐缺失资源 |
+| 主要通过 Photos 手机 App 备份 | 如果已有预览和播放都正常，通常没有必要安装本项目 |
+| 素材放在 NAS 的其他位置 | 未进入 Photos 索引就不在处理范围；本项目不是全 NAS 的编解码替换 |
+
+Photos 手机 App 本身已有 **更多 → 设置 → Image Assistant** 开关。开启后，可为正在浏览的项目生成 JPEG 预览，包括通过网页、File Station 或 SMB 导入的 HEIC/HEVC。**手机端不生成压缩兼容视频副本**，视频播放仍依赖设备本身的解码能力。详见[群晖对桌面端和移动端行为的说明](https://kb.synology.com/en-eu/DSM/tutorial/Unable_to_view_HEIC_photos_HEVC_videos_on_Synology_Photos)。
+
+本项目把受支持的后台生成任务交给 NAS，不依赖手机逐项浏览或电脑客户端处理；如果官方移动端流程已经满足需求，本项目并非必装。是否实际处理某个项目，仍取决于受支持的缺失/损坏状态及已验证的 Photos 版本。
 
 ## 工作方式
 

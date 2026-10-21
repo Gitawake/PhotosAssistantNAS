@@ -6,6 +6,8 @@
 
 PhotosAssistantNAS restores server-side media processing for Synology Photos: generate HEIC/HEIF photo previews, video thumbnails, and H.264/AAC compatibility copies on the NAS, taking over these tasks from client-side Image Assistant. Deploy over SSH without a Photos account, password, OTP, or Container Manager.
 
+**Especially useful after uploads through the Photos web portal, File Station or SMB:** let the NAS generate missing resources without installing desktop Image Assistant and its browser extension, or keeping a client running to process the library.
+
 With the changes introduced around DSM 7.2.2, Synology moved some media processing to end devices, so HEIC/HEVC previews and compatibility copies may require client assistance. This project brings that background work back to the NAS: keep your originals in place and keep using Synology Photos. See [Synology's announcement](https://www.synology.com/en-us/products/status/eol-video-codec-support) and the [Image Assistant FAQ](https://kb.synology.com/en-global/DSM/tutorial/Frequently_asked_questions_about_Synology_Image_Assistant).
 
 The scope is preview and compatibility-copy generation. It does not restore every feature of older DSM versions or provide real-time playback transcoding.
@@ -13,6 +15,19 @@ The scope is preview and compatibility-copy generation. It does not restore ever
 **Experimental; source-only distribution.** Validated on x86_64, DSM 7.4.1-90080 Update 1, and Synology Photos **1.9.1-10928**. The worker uses undocumented local Photos interfaces and refuses to process media after an unvalidated Photos version change. Support for all DSM 7 releases or future versions is not implied. This project is independent of Synology.
 
 > **Risk of data corruption or loss:** preserving originals by design is not a data-safety guarantee. Bugs, interface changes, permission errors, power loss, and storage failures can affect media and album availability. Keep an independent backup, verify recovery, and test noncritical media first. Read the [data-safety disclaimer](DISCLAIMER.md).
+
+## Who this is for
+
+| Your workflow | When this project helps |
+| --- | --- |
+| Upload through the Photos web portal | You want the NAS to prepare previews and compatibility videos without desktop Image Assistant and its extension |
+| Copy media through File Station, SMB, or another transfer method | Files enter a Photos-indexed folder, and you want missing resources generated automatically in the background |
+| Mainly back up through the Photos mobile app | Usually unnecessary if your existing previews and playback already work |
+| Store media elsewhere on the NAS | Out of scope until that media is indexed by Photos; this is not a NAS-wide codec replacement |
+
+The mobile app already offers an Image Assistant switch under **More → Settings**. When enabled, it can generate JPEG previews for items being browsed, including HEIC/HEVC imported through the web portal, File Station or SMB. **It does not generate compressed compatibility videos**; mobile playback still depends on the device's decoding capability. See [Synology's explanation of desktop and mobile behavior](https://kb.synology.com/en-eu/DSM/tutorial/Unable_to_view_HEIC_photos_HEVC_videos_on_Synology_Photos).
+
+This worker moves supported background generation to the NAS instead of relying on a phone to browse items or a desktop client to process them. It is optional when Synology's existing mobile workflow already meets your needs. Supported missing/broken states and the validated Photos version still determine whether an item is processed.
 
 ## How it works
 

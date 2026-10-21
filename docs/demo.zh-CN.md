@@ -6,6 +6,8 @@
 
 上图是流程示意，不是 Photos 截图或实机录像。下面列出的是已记录的 NAS 测试结果，不是伪装成实时运行的动画。
 
+本流程重点演示“不安装桌面 Image Assistant 的网页上传”和“File Station/SMB 导入 Photos 已索引目录”。如果手机备份已经能够正常预览和播放，通常不需要额外服务。手机端 Image Assistant 开关可在浏览时为这些导入项目生成 JPEG 预览，但不生成压缩兼容视频。详见[群晖对桌面端与移动端的说明](https://kb.synology.com/en-eu/DSM/tutorial/Unable_to_view_HEIC_photos_HEVC_videos_on_Synology_Photos)。
+
 ## 已经检查了什么
 
 | 检查 | 实测结果 |

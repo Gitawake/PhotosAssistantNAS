@@ -6,6 +6,8 @@
 
 This is a workflow illustration, not a Photos screenshot or screen recording. The results below are documented NAS tests, not an animation pretending to be a live run.
 
+The walkthrough targets web uploads without desktop Image Assistant, and File Station/SMB imports into Photos-indexed folders. A phone-only backup workflow that already displays and plays correctly usually needs no additional worker. The mobile Image Assistant switch can generate JPEG previews when browsing, including for these imports, but does not generate compressed compatibility videos. See [Synology's desktop/mobile comparison](https://kb.synology.com/en-eu/DSM/tutorial/Unable_to_view_HEIC_photos_HEVC_videos_on_Synology_Photos).
+
 ## What has actually been checked
 
 | Check | Observed result |
