@@ -17,6 +17,7 @@ import stat
 import subprocess
 import sys
 import secrets
+from hardware import device_for, preference
 from types import SimpleNamespace
 import tempfile
 import time
@@ -119,13 +120,13 @@ def candidates():
     return sorted((p for p in pwd.getpwall() if 1024<=p.pw_uid<65534
                    and p.pw_dir.startswith('/var/services/homes/') and Path(p.pw_dir).is_dir()),key=lambda p:p.pw_uid)
 
-def sandbox(uid,gid):
+def sandbox(uid,gid,gpu_gid=None):
     def enter():
         # Fail closed if network namespaces are unavailable; no decoder network access.
         libc=ctypes.CDLL(None,use_errno=True)
         if libc.unshare(0x40000000)!=0: raise OSError(ctypes.get_errno(),'network isolation failed')
         if libc.prctl(38,1,0,0,0)!=0: raise OSError('no_new_privs failed')
-        os.setgroups([]);os.setgid(gid);os.setuid(uid);os.umask(0o077)
+        os.setgroups([] if gpu_gid is None else ([gpu_gid] if isinstance(gpu_gid,int) else gpu_gid));os.setgid(gid);os.setuid(uid);os.umask(0o077)
         resource.setrlimit(resource.RLIMIT_CORE,(0,0))
         resource.setrlimit(resource.RLIMIT_NOFILE,(128,128))
         resource.setrlimit(resource.RLIMIT_FSIZE,(MAX_OUTPUT_BYTES,MAX_OUTPUT_BYTES))
@@ -183,10 +184,12 @@ def process(api,entry,state,package,commit=True,phase='all',previous=None):
             resolution=entry.get('additional',{}).get('resolution',{})
             if ext in IMAGE_EXT:
                 cmd += [str(int(resolution.get('width',0))),str(int(resolution.get('height',0)))]
+            gpu=device_for(Path(__file__).parent/'runtime',preference(state)) if video else None
+            if gpu: cmd+=['--hardware',json.dumps(gpu,separators=(',',':'))]
             logging.info('item=%s source=readonly-fd bytes=%s',item,entry['filesize'])
             child=subprocess.Popen(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,start_new_session=True,
                                    pass_fds=(source_fd,),env={'PATH':'/usr/bin:/bin','LANG':'C'},
-                                   preexec_fn=sandbox(package.pw_uid,package.pw_gid))
+                                   preexec_fn=sandbox(package.pw_uid,package.pw_gid,gpu['groups'] if gpu else None))
             try:
                 out,err=child.communicate(timeout=22000)
             except BaseException:
@@ -197,6 +200,14 @@ def process(api,entry,state,package,commit=True,phase='all',previous=None):
                 reason=next((reasons[line] for line in err.splitlines() if line in reasons),'unknown')
                 logging.warning('item=%s decoder_failure=%s exit=%s',item,reason,child.returncode)
                 raise RuntimeError('Decoder failed')
+            for backend in ('vaapi','qsv','nvenc','software'):
+                if ('VIDEO_BACKEND='+backend).encode() in out.splitlines():
+                    logging.info('item=%s video-backend=%s',item,backend)
+            for driver in ('iHD','i965','radeonsi'):
+                if ('VIDEO_DRIVER='+driver).encode() in out.splitlines():
+                    logging.info('item=%s video-driver=%s',item,driver)
+            if b'HARDWARE_FALLBACK=software' in out.splitlines():
+                logging.info('item=%s hardware-fallback=software',item)
             source_compatible=(video and b'SOURCE_COMPATIBLE' in out.splitlines()) or (
                 not video and previous is not None and previous.get('source_compatible') is True
                 and previous.get('source_identity')==source_identity(entry)

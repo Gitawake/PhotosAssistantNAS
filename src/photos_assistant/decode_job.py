@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Invoked only after privilege drop and network isolation."""
 import os
+import json
 import subprocess
 from pathlib import Path
 import sys
@@ -11,7 +12,9 @@ def main():
     work=Path(sys.argv[1]);preview=bool(int(sys.argv[2]));video=bool(int(sys.argv[3]))
     decoder=Decoder(Path(__file__).resolve().parent/'runtime');decoder.nested=True
     decoder.source_fd=int(sys.argv[4]);source='fd:';ext=sys.argv[5]
-    decoder.expected_size=tuple(map(int,sys.argv[6:8])) or (0,0)
+    decoder.expected_size=tuple(map(int,sys.argv[6:8])) if ext in ('.heic','.heif','.hif') else (0,0)
+    if video and len(sys.argv)==8 and sys.argv[6]=='--hardware':
+        decoder.hardware=json.loads(sys.argv[7])
     if preview: decoder.generate(source,ext,work)
     if video:
         if decoder.compatible_video(source,work,source_ext=ext):

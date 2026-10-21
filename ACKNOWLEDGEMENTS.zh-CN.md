@@ -41,3 +41,5 @@ PhotosAssistantNAS 建立在开源社区长期维护的媒体工具和打包成�
 本项目没有自行实现这些编解码器，也不宣称拥有上述第三方成果。各组件适用各自的许可证与版权声明；本项目的 MIT 许可证不覆盖第三方运行库。具体分发限制、原始包、固定版本及校验值见 [THIRD_PARTY.md](THIRD_PARTY.zh-CN.md)、[vendor/lock.json](vendor/lock.json) 和 [分发说明](docs/distribution.zh-CN.md)。
 
 Synology Photos 是目标平台，不是本项目提供或重新分发的依赖。感谢 Synology 提供的相册产品；本项目与 Synology 无隶属或背书关系。
+
+可选 GPU 加速还使用 SynoCommunity 打包的 Intel [media-driver](https://github.com/intel/media-driver)、[gmmlib](https://github.com/intel/gmmlib) 及[旧版 VAAPI 驱动](https://github.com/intel/intel-vaapi-driver)。感谢相关维护者与贡献者。

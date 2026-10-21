@@ -2,6 +2,11 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.5.6 — 可选 GPU 视频后端
+
+- 增加按能力选择的 Intel/AMD VAAPI、Intel QSV、NVIDIA NVENC 路径及校验后软件回退。Intel VAAPI 已实测；AMD/NVIDIA 未验证，固定 FFmpeg 不含 NVENC，开发 NAS 的 QSV 初始化失败。
+- 内置私有 Intel 用户态驱动及依赖闭包，保留低权限、网络隔离和资源限制。符合条件的 SDR 视频在 GPU 缩放，HDR、全范围转换保留 CPU 滤镜及严格校验。参见[硬件支持](docs/hardware.zh-CN.md)。
+
 ## 0.5.5 — 优先补齐缩略图
 
 - 扫描并处理缺失预览后再生成兼容视频；预览任务不做完整视频转码。每处理最多两个视频任务，重新检查预览。保留串行解码及现有资源限制。

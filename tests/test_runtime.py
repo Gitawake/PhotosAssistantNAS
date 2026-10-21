@@ -35,6 +35,13 @@ class RuntimeTests(unittest.TestCase):
                 'lib/dependency.so':b'required','lib/unrelated.so':b'excluded'},'videodriver')
         self.assertIn('runtime/videodriver/lib/dependency.so',files)
         self.assertNotIn('runtime/videodriver/lib/unrelated.so',files)
+    def test_private_gpu_driver_includes_dynamically_loaded_dependencies(self):
+        with mock.patch.object(runtime,'elf_needed',side_effect=lambda data:['libigdgmm.so.12'] if data==b'intel-driver' else []):
+            _,files,_=self.append({'lib/iHD_drv_video.so':b'intel-driver',
+                'lib/libigdgmm.so.12':b'gmm','lib/libmfxhw64.so.1':b'qsv-runtime'},'videodriver')
+        self.assertIn('runtime/videodriver/lib/iHD_drv_video.so',files)
+        self.assertIn('runtime/videodriver/lib/libigdgmm.so.12',files)
+        self.assertIn('runtime/videodriver/lib/libmfxhw64.so.1',files)
     def test_elf_dependency_string_table(self):
         ident=b'\x7fELF\x02\x01'+b'\0'*10
         header=struct.pack('<16sHHIQQQIHHHHHH',ident,3,62,1,0,64,0,0,64,56,2,0,0,0)

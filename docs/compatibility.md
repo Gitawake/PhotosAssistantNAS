@@ -44,7 +44,11 @@ The public source preparation removes unused session-login and abandoned SPK cod
 - Native phone App playback for this worker's outputs.
 - Actual generation in a populated shared space; domain and LDAP users.
 - Every supported container, malformed file, HDR or Dolby Vision variant.
-- DSM upgrades, Photos API changes, other CPU models or hardware transcoding.
+- DSM upgrades, Photos API changes, other CPU models or untested GPU backends.
 - Byte-for-byte or perceptually identical output to Synology Image Assistant.
 
 HEIC/HEIF/HIF images and the video's declared extension list are candidates, not guarantees of successful decoding. Original quality and HDR are preserved in the original file; the compatibility copy may be SDR and lower resolution.
+
+## 0.5.6 GPU validation
+
+See [backend validation](hardware.md) for the Intel VAAPI result, range-conversion checks, software fallback, and QSV/NVIDIA/AMD limitations. GPU jobs now receive only the selected device groups; other jobs retain no supplementary groups.

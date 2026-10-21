@@ -12,7 +12,7 @@
 | 辅助动态库 | [官方包](https://synocommunity.com/package/synocli-videodriver) | 仅选择必要库及其依赖闭包；仍需逐组件审查许可证和源码 |
 | 套件构建配方 | [spksrc](https://github.com/SynoCommunity/spksrc) | 配方链接不能替代精确匹配的对应源码 |
 
-个人构建会清除 ELF 的 DT_RPATH/DT_RUNPATH，由私有库路径控制解析。ImageMagick 策略替换为禁止委托程序、仅允许 HEIC/JPEG 模块。相关实现在 `tools/private_elf.py` 和 `src/photos_assistant/policy.xml`。不运行厂商安装脚本、不替换系统编解码器、不安装硬件驱动。
+个人构建会清除 ELF 的 DT_RPATH/DT_RUNPATH，由私有库路径控制解析。ImageMagick 策略替换为禁止委托程序、仅允许 HEIC/JPEG 模块。相关实现在 `tools/private_elf.py` 和 `src/photos_assistant/policy.xml`。不运行厂商安装脚本、不替换系统编解码器、不安装内核驱动。
 
 生成的 `runtime-manifest.json` 记录依赖 URL、SHA256、原始包 INFO、提取文件数、ELF 更改和检测到的 nonfree 状态。它用于辅助清点，不能证明所有依赖都可再分发。
 
@@ -25,3 +25,5 @@
 - [ImageMagick 许可证](https://imagemagick.org/license/)
 
 项目灵感、上游作者及依赖致谢见 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.zh-CN.md)。
+
+[GPU 后端说明](docs/hardware.zh-CN.md)。私有构建还从锁定的 VideoDriver 归档提取 Intel media-driver、旧版 i965、GMM 依赖闭包及 Media SDK 硬件运行库；不安装或替换内核驱动。

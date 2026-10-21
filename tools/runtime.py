@@ -11,7 +11,7 @@ from private_elf import private_elf, elf_needed
 
 VIDEO_LIBS = {'libdrm.so.2', 'libva.so.2', 'libOpenCL.so.1', 'libmfx.so.1',
               'libva-drm.so.2', 'libvulkan.so.1', 'libexpat.so.1',
-              'libshaderc_shared.so.1', 'libvpl.so.2'}
+              'libshaderc_shared.so.1', 'libvpl.so.2', 'iHD_drv_video.so', 'i965_drv_video.so', 'libmfxhw64.so.1'}
 
 
 def sha256(path):

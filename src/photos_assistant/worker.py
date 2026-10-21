@@ -34,7 +34,13 @@ class Decoder:
         base=self.runtime/name
         env={'PATH':'/usr/bin:/bin','LANG':'C','HOME':str(work),'TMPDIR':str(work),
              'LD_LIBRARY_PATH':str(base/'lib'),'OMP_NUM_THREADS':'2'}
-        if name=='ffmpeg': env['LD_LIBRARY_PATH']+=':'+str(self.runtime/'videodriver/lib')
+        if name=='ffmpeg':
+            env['LD_LIBRARY_PATH']+=':'+str(self.runtime/'videodriver/lib')
+            if getattr(self,'hardware',None):
+                if self.hardware.get('driver'):
+                    driver_path=self.hardware.get('driver_path') or str(self.runtime/'videodriver/lib')
+                    env.update(LIBVA_DRIVERS_PATH=driver_path,LIBVA_DRIVER_NAME=self.hardware['driver'])
+                    env['LD_LIBRARY_PATH']+=':'+driver_path+':'+str(Path(driver_path).parent)
         else:
             env.update(MAGICK_HOME=str(base),MAGICK_CONFIGURE_PATH=str(base/'etc/ImageMagick-7'),
                 MAGICK_CODER_MODULE_PATH=str(base/'lib/ImageMagick-7.1.2/modules-Q16HDRI/coders'),
@@ -130,21 +136,78 @@ class Decoder:
 
     def transcode(self, source, work):
         probe=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-select_streams','v:0',
-            '-show_entries','stream=color_transfer:format=duration','-of','json',*self.input_args(source)],work))
+            '-show_entries','stream=codec_name,pix_fmt,color_transfer,color_range:stream_side_data=rotation:format=duration','-of','json',*self.input_args(source)],work))
         duration=float(probe.get('format',{}).get('duration',0))
         require_space(work,video_budget(duration))
+        if getattr(self,'hardware',None):
+            initial=self.hardware
+            candidates=[initial]+[dict(initial,driver=name) for name in initial.get('driver_fallbacks',[])]
+            for candidate in candidates:
+                self.hardware=candidate
+                try:
+                    result=self._transcode_once(source,work,probe,True)
+                    print('VIDEO_BACKEND='+candidate.get('backend','vaapi'),flush=True)
+                    if candidate.get('driver'): print('VIDEO_DRIVER='+candidate['driver'],flush=True)
+                    return result
+                except (subprocess.CalledProcessError,subprocess.TimeoutExpired,ValueError,OSError):
+                    partial=work/'compatible.mp4'
+                    if partial.exists(): partial.unlink()
+            self.hardware=initial
+            print('HARDWARE_FALLBACK=software',flush=True)
+        result=self._transcode_once(source,work,probe,False)
+        print('VIDEO_BACKEND=software',flush=True)
+        return result
+
+    def _transcode_once(self,source,work,probe,accelerated):
+        duration=float(probe['format']['duration'])
         filters=[]
+        gpu_scaling=False
+        device_args=[];decode_args=['-hwaccel','none']
+        stream=probe.get('streams',[{}])[0]
+        if accelerated:
+            backend=self.hardware.get('backend','vaapi')
+            if backend=='vaapi':
+                device_args=['-init_hw_device','vaapi=gpu:'+self.hardware['device'],'-filter_hw_device','gpu']
+                decode_device='gpu'
+            elif backend=='qsv':
+                device_args=['-init_hw_device','vaapi=render:'+self.hardware['device'],'-init_hw_device','qsv=gpu@render','-filter_hw_device','gpu']
+                decode_device='render'
+            elif backend=='nvenc':
+                device_args=['-init_hw_device','cuda=gpu:'+self.hardware['device'],'-filter_hw_device','gpu']
+                decode_device='gpu'
+            else: raise ValueError('Unsupported acceleration backend')
+            if stream.get('codec_name') in ('h264','hevc','vp9','av1','mpeg2video') and stream.get('pix_fmt') in ('yuv420p','yuvj420p','yuv420p10le'):
+                accel={'nvenc':'cuda','qsv':'qsv','vaapi':'vaapi'}[backend]
+                if backend=='qsv': decode_device='gpu'
+                decode_args=['-hwaccel',accel,'-hwaccel_device',decode_device,'-hwaccel_output_format',accel]
+                filters=['hwdownload','format='+('p010le' if stream.get('pix_fmt')=='yuv420p10le' else 'nv12')]
+                rotated=any(x.get('rotation',0)%360 for x in stream.get('side_data_list',[]))
+                gpu_scaling=(backend in ('vaapi','qsv') and not rotated
+                    and stream.get('color_transfer') not in ('arib-std-b67','smpte2084')
+                    and stream.get('color_range')!='pc' and stream.get('pix_fmt')!='yuvj420p')
         if probe.get('streams',[{}])[0].get('color_transfer') in ('arib-std-b67','smpte2084'):
             filters.append('zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv')
         # Landscape <=1280x720, portrait <=720x1280; never upscale.
         filters+=['scale=w=\'if(gte(iw,ih),min(iw,1280),min(iw,720))\':h=\'if(gte(iw,ih),min(ih,720),min(ih,1280))\':force_original_aspect_ratio=decrease:force_divisible_by=2:in_range=auto:out_range=tv',
                   'setsar=1','format=yuv420p']
+        if gpu_scaling:
+            if backend=='vaapi':
+                scale=filters[-3].replace('scale=','scale_vaapi=',1).replace(':in_range=auto','')
+                filters=[scale+':format=nv12:reset_sar=1','setparams=range=limited']
+            else:
+                factor='if(gte(iw,ih),min(1,min(1280/iw,720/ih)),min(1,min(720/iw,1280/ih)))'
+                filters=["scale_qsv=w='max(2,trunc(iw*("+factor+")/2)*2)':h='max(2,trunc(ih*("+factor+")/2)*2)':format=nv12",'setsar=1']
         dest=work/'compatible.mp4'
-        self.run('ffmpeg','ffmpeg',['-nostdin','-v','error','-y','-hwaccel','none',
-            '-threads','2',*self.input_args(source),'-map','0:v:0','-map','0:a:0?',
+        encoder_args=['-c:v','libx264','-preset','veryfast','-crf','23','-pix_fmt','yuv420p']
+        if accelerated:
+            if not gpu_scaling: filters+=['format=nv12','hwupload']
+            encoder={'vaapi':'h264_vaapi','qsv':'h264_qsv','nvenc':'h264_nvenc'}[backend]
+            encoder_args=['-c:v',encoder,'-b:v','2500k']
+        self.run('ffmpeg','ffmpeg',['-nostdin','-v','error','-y',*device_args,
+            '-threads','2',*decode_args,*self.input_args(source),'-map','0:v:0','-map','0:a:0?',
             '-map_metadata','-1','-map_chapters','-1','-vf',','.join(filters),
-            '-c:v','libx264','-preset','veryfast','-crf','23','-maxrate','2500k','-bufsize','5000k',
-            '-threads','2','-filter_threads','1','-pix_fmt','yuv420p','-color_range','tv','-fpsmax','30',
+            *encoder_args,'-maxrate','2500k','-bufsize','5000k',
+            '-threads','2','-filter_threads','1','-color_range','tv','-fpsmax','30',
             '-c:a','aac','-b:a','128k','-ac','2','-movflags','+faststart',dest],work,timeout=21600)
         if not self.compatible_video(dest,work): raise ValueError('Generated video failed compatibility check')
         result=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-show_entries','format=duration','-of','json',dest],work))

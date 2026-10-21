@@ -48,3 +48,7 @@ Photos 版本未经验证时，版本检查会主动拒绝运行。这不代表�
 - 与 Synology Image Assistant 逐字节或感知完全一致的输出。
 
 HEIC/HEIF/HIF 图片及代码列出的视频扩展名只是候选范围，不保证所有文件均可解码。原片质量和 HDR 保留在原始文件中；兼容副本可能为较低分辨率的 SDR。
+
+## 0.5.6 GPU 验证
+
+参见[后端验证](hardware.zh-CN.md)：Intel VAAPI 实测、范围转换检查、软件回退以及 QSV/NVIDIA/AMD 限制。GPU 任务现在仅获得所选设备组，其他任务仍不带附加组。

@@ -2,6 +2,11 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.5.6 — optional GPU video backends
+
+- Add capability-based Intel/AMD VAAPI, Intel QSV and NVIDIA NVENC dispatch with validated software fallback. Intel VAAPI is tested; AMD/NVIDIA remain unverified, current pinned FFmpeg lacks NVENC, and QSV initialization fails on the development NAS.
+- Bundle private Intel userspace GPU drivers and their dependency closure; keep low-privilege/network isolation and resource limits. GPU-scale eligible SDR videos while retaining CPU HDR/full-range conversion and strict output checks. See [hardware support](docs/hardware.md).
+
 ## 0.5.5 — prioritize missing previews
 
 - Drain missing-preview pages before starting compatibility-video work. Preview jobs never transcode a video; process at most two video jobs before scanning previews again. Keep sequential decoding and existing resource limits.

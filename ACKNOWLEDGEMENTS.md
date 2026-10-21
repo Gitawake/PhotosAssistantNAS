@@ -41,3 +41,5 @@ Upstream runtimes include or link additional open-source components. The followi
 This project does not implement these codecs or claim ownership of third-party work. Each component retains its own license and copyright; this project's MIT license does not cover third-party runtimes. See [THIRD_PARTY.md](THIRD_PARTY.md), [vendor/lock.json](vendor/lock.json), and [distribution requirements](docs/distribution.md) for restrictions, original packages, pinned versions, and checksums.
 
 Synology Photos is the target platform, not a dependency supplied or redistributed by this project. Thank you to Synology for its photo product. This project is independent of Synology and is not endorsed by it.
+
+Optional GPU acceleration also uses Intel’s [media-driver](https://github.com/intel/media-driver), [gmmlib](https://github.com/intel/gmmlib), and [legacy VAAPI driver](https://github.com/intel/intel-vaapi-driver), packaged by SynoCommunity. Thank you to their maintainers and contributors.
