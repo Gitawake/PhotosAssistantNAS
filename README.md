@@ -92,7 +92,7 @@ The builder uses Python 3.8+; CI covers Python 3.9 and 3.12. There are no PyPI d
 python3 tools/build.py
 ```
 
-The builder downloads three original SPKs from pinned official SynoCommunity URLs, verifies SHA256, and extracts runtime files only. **It does not run SPK installation scripts or depend on an older local SPK.** Output: `dist/PhotosAssistantNAS-0.5.6-x64.private.tar`.
+The builder downloads three original SPKs from pinned official SynoCommunity URLs, verifies SHA256, and extracts runtime files only. **It does not run SPK installation scripts or depend on an older local SPK.** Output: `dist/PhotosAssistantNAS-0.6.0-x64.private.tar`.
 
 **This build is for personal use; do not upload it to public Releases.** The pinned FFmpeg enables `--enable-gpl --enable-version3 --enable-nonfree`. Public binary distribution requires a redistributable build and a component-by-component origin, license, and corresponding-source audit; attaching a few license texts is insufficient. See [distribution requirements](docs/distribution.md).
 
@@ -137,3 +137,5 @@ Source archives contain public files only, without private runtimes, prototype i
 The initial inspiration was [octavianx/synology-photos-server-side-thumbnailgen](https://github.com/octavianx/synology-photos-server-side-thumbnailgen): moving photo-library processing back to the NAS. Thank you to original author octavianx and the contributors to FFmpeg, ImageMagick, SynoCommunity, and their dependencies. The original MIT copyright notice is retained. See [acknowledgements](ACKNOWLEDGEMENTS.md) for attribution and dependency references, and [THIRD_PARTY.md](THIRD_PARTY.md) for usage and licensing boundaries.
 
 [Hardware acceleration and backend status](docs/hardware.md).
+
+[Event-driven processing and recovery](docs/events.md).

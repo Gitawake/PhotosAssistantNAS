@@ -2,6 +2,11 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.6.0 — event-driven persistent queues
+
+- Replace repeated history scans with Linux inotify, a separate collector and a private SQLite queue. Wait for stable writes and query only the affected Photos folder.
+- Preserve preview priority, GPU backends and delayed retries. Reconcile on startup, restart, explicit requests or event overflow; completing video batches never starts a full rescan. See [event processing](docs/events.md).
+
 ## 0.5.6 — optional GPU video backends
 
 - Add capability-based Intel/AMD VAAPI, Intel QSV and NVIDIA NVENC dispatch with validated software fallback. Intel VAAPI is tested; AMD/NVIDIA remain unverified, current pinned FFmpeg lacks NVENC, and QSV initialization fails on the development NAS.

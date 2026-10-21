@@ -269,7 +269,7 @@ def scan_progress(offset,page_size,processed,batch_size=BATCH_SIZE):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action',choices=['once','daemon'])
+    parser.add_argument('action',choices=['once','daemon','reconcile'])
     parser.add_argument('--state',type=Path,default=Path('/volume1/@PhotosAssistantNAS/state'))
     parser.add_argument('--test-item',type=int,action='append')
     parser.add_argument('--runner')
@@ -281,6 +281,11 @@ def main():
     for folder in (Path(__file__).resolve().parent,args.state.resolve()):
         info=folder.stat()
         if info.st_uid!=0 or info.st_mode&0o022: raise RuntimeError('Untrusted coordinator directory')
+    if args.action=='reconcile':
+        from event_queue import Queue
+        queue=Queue(args.state);queue.request_reconcile('manual-request');queue.close()
+        print('History reconciliation requested; existing media are unchanged.')
+        return
     lock=(args.state/'native.lock').open('a');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     for pattern in ('job-*','api-*'):
         for leftover in args.state.glob(pattern):
@@ -294,6 +299,10 @@ def main():
         try: pwd.getpwuid(uid)
         except KeyError: break
     package=SimpleNamespace(pw_uid=uid,pw_gid=uid)
+    if args.action=='daemon' and not args.test_item:
+        from event_scheduler import run
+        run(args,package)
+        return
     retry_path=args.state/'retry.json'
     retries=json.loads(retry_path.read_text()) if retry_path.exists() else {}
     cursors_path=args.state/'native-priority-cursors.json'

@@ -17,6 +17,8 @@ This is experimental software that installs a root service on a personal NAS. Re
 
 ## Reporting
 
+The root event collector records local changes into a private durable queue and does not decode media. Its wakeup and database handles are not inherited by decoder jobs. Queue files contain private paths and IDs and must not be uploaded as diagnostics. No DSM index registration or public callback endpoint is added.
+
 Use the repository's private vulnerability reporting feature if the maintainer has enabled it. Otherwise ask for a private contact method without posting exploit details or personal data publicly. There is no dedicated disclosure mailbox configured in this source export.
 
 Never attach passwords, OTPs, session cookies, authentication URLs, SSH keys, private media, addresses, usernames or raw NAS diagnostics to an issue. Prefer a synthetic reproducer with architecture, exact DSM/Photos versions, service state and redacted error codes. No remote NAS access or test credentials are required for an initial report.

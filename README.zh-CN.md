@@ -93,7 +93,7 @@ curl -fsSL https://raw.githubusercontent.com/Gitawake/PhotosAssistantNAS/main/un
 python3 tools/build.py
 ```
 
-构建脚本从锁定的 SynoCommunity 官方地址下载三个原始 SPK，校验 SHA256，仅提取运行时文件，**不执行 SPK 安装脚本、不依赖本地旧版 SPK**。结果位于 `dist/PhotosAssistantNAS-0.5.6-x64.private.tar`。
+构建脚本从锁定的 SynoCommunity 官方地址下载三个原始 SPK，校验 SHA256，仅提取运行时文件，**不执行 SPK 安装脚本、不依赖本地旧版 SPK**。结果位于 `dist/PhotosAssistantNAS-0.6.0-x64.private.tar`。
 
 **这个构建结果仅供个人使用，不应上传到公开 Releases。** 当前锁定 FFmpeg 启用了 `--enable-gpl --enable-version3 --enable-nonfree`。公开分发前需要更换为可再分发的构建，并逐项完成来源、许可证及对应源码审计，不能只附几份许可证。见 [分发说明](docs/distribution.zh-CN.md)。
 
@@ -138,3 +138,5 @@ python3 tools/package_source.py
 本项目的初始灵感来自 [octavianx/synology-photos-server-side-thumbnailgen](https://github.com/octavianx/synology-photos-server-side-thumbnailgen)：将相册媒体处理放回 NAS 服务端。感谢原作者 octavianx，以及 FFmpeg、ImageMagick、SynoCommunity 和所有底层依赖的贡献者。原有 MIT 版权声明已保留；完整来源、依赖引用和致谢见 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.zh-CN.md)，第三方使用与许可边界见 [THIRD_PARTY.md](THIRD_PARTY.zh-CN.md)。
 
 [硬件加速及后端验证状态](docs/hardware.zh-CN.md)。
+
+[事件驱动处理及恢复](docs/events.zh-CN.md)。

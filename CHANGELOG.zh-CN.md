@@ -2,6 +2,11 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.6.0 — 事件驱动与持久队列
+
+- 使用 Linux inotify、独立收集进程和私有 SQLite 队列替代重复历史扫描；等待写入稳定后，只查询受影响的 Photos 目录。
+- 保留预览优先、GPU 后端及延迟重试。仅在启动、重启、显式请求或事件溢出等情况下补查，不再完成视频批次就全量重扫。参见[事件处理](docs/events.zh-CN.md)。
+
 ## 0.5.6 — 可选 GPU 视频后端
 
 - 增加按能力选择的 Intel/AMD VAAPI、Intel QSV、NVIDIA NVENC 路径及校验后软件回退。Intel VAAPI 已实测；AMD/NVIDIA 未验证，固定 FFmpeg 不含 NVENC，开发 NAS 的 QSV 初始化失败。
