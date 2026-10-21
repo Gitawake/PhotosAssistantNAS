@@ -6,9 +6,9 @@ PhotosAssistantNAS 建立在开源社区长期维护的媒体工具和打包成�
 
 ## 灵感来源
 
-本项目最初的方向来自用户提供的 [Gitawake/synology-photos-server-side-thumbnailgen](https://github.com/Gitawake/synology-photos-server-side-thumbnailgen)：在 NAS 服务端补齐 Synology Photos 的媒体预览，减少对客户端处理的依赖。
+本项目最初的方向来自 [octavianx/synology-photos-server-side-thumbnailgen](https://github.com/octavianx/synology-photos-server-side-thumbnailgen)：在 NAS 服务端补齐 Synology Photos 的媒体预览，减少对客户端处理的依赖。
 
-参考版本为 `11ed028780d51d00f8056b123b22bc716ba6a0ec`。该项目的版权声明为 **Copyright (c) 2026 octavianx，MIT License**；相关版权与许可声明保留在本项目 [LICENSE](LICENSE) 和 [NOTICE.md](NOTICE.zh-CN.md)。感谢原作者及 Gitawake 仓库维护者对这一方向的探索和分享。
+参考版本为 `11ed028780d51d00f8056b123b22bc716ba6a0ec`。该项目的版权声明为 **Copyright (c) 2026 octavianx，MIT License**；相关版权与许可声明保留在本项目 [LICENSE](LICENSE) 和 [NOTICE.md](NOTICE.zh-CN.md)。感谢原作者 octavianx 及上游贡献者对这一方向的探索和分享。
 
 目前的 SSH 部署、无 Photos 登录的本机接口协调、隔离解码、只读文件句柄视频输入和卸载机制是本项目当前实现。灵感来源不代表本项目与参考项目采用相同的系统接入方式，也不意味着它们的作者对本项目的数据安全或兼容性负责。
 
@@ -22,7 +22,7 @@ PhotosAssistantNAS 建立在开源社区长期维护的媒体工具和打包成�
 | Python Software Foundation 与 Python 贡献者 | 安装、卸载、任务协调和构建脚本使用的标准库 | [Python](https://www.python.org/) · [许可证](https://docs.python.org/3/license.html) |
 | Linux / systemd 项目及贡献者 | 文件句柄、进程权限隔离和服务管理 | [Linux](https://www.kernel.org/) · [systemd](https://systemd.io/) |
 
-感谢 hgy59 对 ImageMagick/libheif 适配的贡献，参考 [spksrc PR #6744](https://github.com/SynoCommunity/spksrc/pull/6744)。原参考项目还列出了其自身的背景资料与致谢，见 [原项目 Credits](https://github.com/Gitawake/synology-photos-server-side-thumbnailgen#credits)。
+感谢 hgy59 对 ImageMagick/libheif 适配的贡献，参考 [spksrc PR #6744](https://github.com/SynoCommunity/spksrc/pull/6744)。原参考项目还列出了其自身的背景资料与致谢，见 [原项目 Credits](https://github.com/octavianx/synology-photos-server-side-thumbnailgen#credits)。
 
 ## 底层媒体与图形库
 

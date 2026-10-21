@@ -6,7 +6,7 @@
 
 | 组件 | 来源 | 处理方式 |
 | --- | --- | --- |
-| 最初的缩略图思路 | [参考项目](https://github.com/Gitawake/synology-photos-server-side-thumbnailgen) | 保留 MIT 声明，见 [NOTICE.md](NOTICE.zh-CN.md) |
+| 最初的缩略图思路 | [参考项目](https://github.com/octavianx/synology-photos-server-side-thumbnailgen) | 保留 MIT 声明，见 [NOTICE.md](NOTICE.zh-CN.md) |
 | ImageMagick 运行库 | [官方包](https://synocommunity.com/package/imagemagick) | 锁定官方下载地址和 SHA256；ImageMagick 许可证不能覆盖所有链接库 |
 | FFmpeg 运行库 | [官方包](https://synocommunity.com/package/ffmpeg8) | 当前二进制启用 GPL、version3 及 nonfree，不能公开分发本项目二进制包 |
 | 辅助动态库 | [官方包](https://synocommunity.com/package/synocli-videodriver) | 仅选择必要库及其依赖闭包；仍需逐组件审查许可证和源码 |

@@ -114,4 +114,4 @@ python3 tools/package_source.py
 
 ## 项目灵感与致谢
 
-本项目的初始灵感来自 [Gitawake/synology-photos-server-side-thumbnailgen](https://github.com/Gitawake/synology-photos-server-side-thumbnailgen)：将相册媒体处理放回 NAS 服务端。感谢原作者 octavianx、Gitawake 仓库维护者，以及 FFmpeg、ImageMagick、SynoCommunity 和所有底层依赖的贡献者。原有 MIT 版权声明已保留；完整来源、依赖引用和致谢见 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.zh-CN.md)，第三方使用与许可边界见 [THIRD_PARTY.md](THIRD_PARTY.zh-CN.md)。
+本项目的初始灵感来自 [octavianx/synology-photos-server-side-thumbnailgen](https://github.com/octavianx/synology-photos-server-side-thumbnailgen)：将相册媒体处理放回 NAS 服务端。感谢原作者 octavianx，以及 FFmpeg、ImageMagick、SynoCommunity 和所有底层依赖的贡献者。原有 MIT 版权声明已保留；完整来源、依赖引用和致谢见 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.zh-CN.md)，第三方使用与许可边界见 [THIRD_PARTY.md](THIRD_PARTY.zh-CN.md)。

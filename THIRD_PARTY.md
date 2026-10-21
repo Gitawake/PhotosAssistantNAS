@@ -6,7 +6,7 @@ The source repository contains project scripts, the dependency lock, and copied 
 
 | Component | Source | Handling |
 | --- | --- | --- |
-| Initial thumbnail approach | https://github.com/Gitawake/synology-photos-server-side-thumbnailgen | MIT notice retained; see NOTICE.md |
+| Initial thumbnail approach | https://github.com/octavianx/synology-photos-server-side-thumbnailgen | MIT notice retained; see NOTICE.md |
 | ImageMagick runtime | https://synocommunity.com/package/imagemagick | Lock contains official URL and SHA256; ImageMagick license alone does not cover every linked library |
 | FFmpeg runtime | https://synocommunity.com/package/ffmpeg8 | Current binary enables GPL, version3 and nonfree; public binary distribution is blocked |
 | Supporting shared libraries | https://synocommunity.com/package/synocli-videodriver | Only required library groups and their dependency closure are selected; component-by-component license and source audit remains required |

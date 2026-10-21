@@ -4,7 +4,7 @@
 
 The project initially explored the server-side thumbnail approach in:
 
-- https://github.com/Gitawake/synology-photos-server-side-thumbnailgen
+- https://github.com/octavianx/synology-photos-server-side-thumbnailgen
 - Reference commit: `11ed028780d51d00f8056b123b22bc716ba6a0ec`
 - Copyright (c) 2026 octavianx; MIT.
 

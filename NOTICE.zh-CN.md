@@ -4,7 +4,7 @@
 
 本项目最初参考了以下项目在服务端生成缩略图的思路：
 
-- [Gitawake/synology-photos-server-side-thumbnailgen](https://github.com/Gitawake/synology-photos-server-side-thumbnailgen)
+- [octavianx/synology-photos-server-side-thumbnailgen](https://github.com/octavianx/synology-photos-server-side-thumbnailgen)
 - 参考提交：`11ed028780d51d00f8056b123b22bc716ba6a0ec`
 - Copyright (c) 2026 octavianx；MIT 许可证。
 

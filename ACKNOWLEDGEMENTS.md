@@ -6,9 +6,9 @@ PhotosAssistantNAS builds on media tools and packaging work maintained by the op
 
 ## Inspiration
 
-The initial direction came from the user-provided [Gitawake/synology-photos-server-side-thumbnailgen](https://github.com/Gitawake/synology-photos-server-side-thumbnailgen): generating Synology Photos media previews on the NAS to reduce dependence on client processing.
+The initial direction came from [octavianx/synology-photos-server-side-thumbnailgen](https://github.com/octavianx/synology-photos-server-side-thumbnailgen): generating Synology Photos media previews on the NAS to reduce dependence on client processing.
 
-The reference revision is `11ed028780d51d00f8056b123b22bc716ba6a0ec`. Its notice is **Copyright (c) 2026 octavianx, MIT License**. Copyright and permission notices are retained in [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md). Thank you to the original author and the Gitawake repository maintainer for exploring and sharing this approach.
+The reference revision is `11ed028780d51d00f8056b123b22bc716ba6a0ec`. Its notice is **Copyright (c) 2026 octavianx, MIT License**. Copyright and permission notices are retained in [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md). Thank you to octavianx and the upstream contributors for exploring and sharing this approach.
 
 The current SSH deployment, local-interface coordination without Photos login, isolated decoding, read-only descriptor video input, and uninstall mechanism are this project's present implementation. Inspiration does not imply identical system integration or responsibility by upstream authors for this project's data safety or compatibility.
 
@@ -22,7 +22,7 @@ The current SSH deployment, local-interface coordination without Photos login, i
 | Python Software Foundation and Python contributors | Standard library used by installation, uninstall, coordination, and build scripts | [Python](https://www.python.org/) · [License](https://docs.python.org/3/license.html) |
 | Linux / systemd projects and contributors | File descriptors, process privilege isolation, service management | [Linux](https://www.kernel.org/) · [systemd](https://systemd.io/) |
 
-Thank you to hgy59 for ImageMagick/libheif adaptation work; see [spksrc PR #6744](https://github.com/SynoCommunity/spksrc/pull/6744). The reference project also lists its background material and acknowledgements in its [Credits](https://github.com/Gitawake/synology-photos-server-side-thumbnailgen#credits).
+Thank you to hgy59 for ImageMagick/libheif adaptation work; see [spksrc PR #6744](https://github.com/SynoCommunity/spksrc/pull/6744). The reference project also lists its background material and acknowledgements in its [Credits](https://github.com/octavianx/synology-photos-server-side-thumbnailgen#credits).
 
 ## Underlying media and graphics libraries
 
