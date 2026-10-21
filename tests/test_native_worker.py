@@ -111,7 +111,7 @@ class NativeTests(unittest.TestCase):
             else: self.assertFalse(busy)
         self.assertEqual(offset,0)
     def test_scheduler_revisits_batch_until_drained_and_then_idles(self):
-        self.assertEqual(n.scan_progress(200,100,2),(200,True))
+        self.assertEqual(n.scan_progress(200,100,n.BATCH_SIZE),(200,True))
         self.assertEqual(n.scan_progress(200,100,0),(300,True))
         self.assertEqual(n.scan_progress(300,8,1),(0,True))
         self.assertEqual(n.scan_progress(0,8,0),(0,False))

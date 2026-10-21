@@ -25,6 +25,7 @@ from worker import ApiError, atomic_json, assert_photos_version, require_space, 
 VIDEO_EXT={'.3g2','.3gp','.asf','.avi','.divx','.m4v','.mov','.mpeg','.mpg','.mp4','.mts','.m2t','.m2ts','.qt','.wmv','.xvid'}
 IMAGE_EXT={'.heic','.heif','.hif'}
 MISSING={'ame_defect','broken'}
+BATCH_SIZE=20
 ADDITIONAL=['thumbnail','video_convert','resolution']
 
 IDENTITY_FIELDS=('filename','filesize','indexed_time','folder_id','owner_user_id')
@@ -239,7 +240,7 @@ def process(api,entry,state,package,commit=True):
 
 def scan_progress(offset,page_size,processed):
     """Keep draining work/pages; wait only after reaching the collection end."""
-    if processed>=2: return offset,True
+    if processed>=BATCH_SIZE: return offset,True
     if page_size==100: return offset+100,True
     return 0,processed>0
 
@@ -307,8 +308,8 @@ def main():
                                 logging.warning('item=%s failed=%s',entry['id'],type(error).__name__)
                                 retries[retry_key]=time.time()+3600
                                 atomic_json(retry_path,retries)
-                            if count>=2: break
-                        if count>=2: break
+                            if count>=BATCH_SIZE: break
+                        if count>=BATCH_SIZE: break
                     last=pages[-1][1]
                     cursors[key],more=scan_progress(offset,len(last),count)
                     busy=busy or more

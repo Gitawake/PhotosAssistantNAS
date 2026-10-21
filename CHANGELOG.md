@@ -4,7 +4,7 @@
 
 ## 0.5.4 — drain pending work without idle waits
 
-- Continue immediately after processing tasks or while historical pages remain; wait 60 seconds only when the scan reaches idle. Keep sequential decoding, two-success batches and existing CPU/memory limits.
+- Continue immediately after processing tasks or while historical pages remain; wait 60 seconds only when the scan reaches idle. Increase each batch from 2 to 20 successful tasks while keeping sequential decoding and existing CPU/memory limits.
 - Back off unavailable API contexts for 60 seconds independently; failed media retain their one-hour retry delay.
 
 ## 0.5.3 — skip compatible originals and scan historical media
