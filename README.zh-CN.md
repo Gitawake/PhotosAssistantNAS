@@ -93,7 +93,7 @@ curl -fsSL https://raw.githubusercontent.com/Gitawake/PhotosAssistantNAS/main/un
 python3 tools/build.py
 ```
 
-构建脚本从锁定的 SynoCommunity 官方地址下载三个原始 SPK，校验 SHA256，仅提取运行时文件，**不执行 SPK 安装脚本、不依赖本地旧版 SPK**。结果位于 `dist/PhotosAssistantNAS-0.5.4-x64.private.tar`。
+构建脚本从锁定的 SynoCommunity 官方地址下载三个原始 SPK，校验 SHA256，仅提取运行时文件，**不执行 SPK 安装脚本、不依赖本地旧版 SPK**。结果位于 `dist/PhotosAssistantNAS-0.5.5-x64.private.tar`。
 
 **这个构建结果仅供个人使用，不应上传到公开 Releases。** 当前锁定 FFmpeg 启用了 `--enable-gpl --enable-version3 --enable-nonfree`。公开分发前需要更换为可再分发的构建，并逐项完成来源、许可证及对应源码审计，不能只附几份许可证。见 [分发说明](docs/distribution.zh-CN.md)。
 

@@ -46,6 +46,11 @@ def needs(entry,previous=None):
         video=False
     return bool(thumb.get('unit_id')) and preview, bool(thumb.get('unit_id')) and video
 
+def phase_needs(entry,previous,phase):
+    preview,video=needs(entry,previous)
+    return preview and phase!='video',video and phase!='preview'
+
+
 class NativePhotos:
     """No shell, credentials, session tokens, HTTP listener, or general command proxy."""
     def __init__(self, runner, state):
@@ -162,8 +167,8 @@ def open_input(api,entry):
         yield fd,verify
     finally: os.close(fd)
 
-def process(api,entry,state,package,commit=True):
-    preview,video=needs(entry)
+def process(api,entry,state,package,commit=True,phase='all',previous=None):
+    preview,video=phase_needs(entry,previous,phase)
     if not (preview or video): return False
     if int(entry.get('filesize',0))<=0: return False
     require_space(state,1024**3)
@@ -192,7 +197,10 @@ def process(api,entry,state,package,commit=True):
                 reason=next((reasons[line] for line in err.splitlines() if line in reasons),'unknown')
                 logging.warning('item=%s decoder_failure=%s exit=%s',item,reason,child.returncode)
                 raise RuntimeError('Decoder failed')
-            source_compatible=video and b'SOURCE_COMPATIBLE' in out.splitlines()
+            source_compatible=(video and b'SOURCE_COMPATIBLE' in out.splitlines()) or (
+                not video and previous is not None and previous.get('source_compatible') is True
+                and previous.get('source_identity')==source_identity(entry)
+                and previous.get('cache_key')==entry.get('additional',{}).get('thumbnail',{}).get('cache_key'))
             if video and not source_compatible and not (decode/'compatible.mp4').exists():
                 raise RuntimeError('Decoder returned no video decision')
             if source_compatible:
@@ -216,6 +224,7 @@ def process(api,entry,state,package,commit=True):
                 checked_copy(decode/name,target,package.pw_uid,MAX_OUTPUT_BYTES)
                 os.chown(target,account.pw_uid,account.pw_gid);os.chmod(target,0o400)
                 outputs[key]=target
+            cache_key=fresh.get('additional',{}).get('thumbnail',{}).get('cache_key')
             if outputs and commit:
                 # DSM local ConvertedFile can return an empty/117 transport reply even
                 # after accepting files. Only freshly read Photos state proves success.
@@ -228,19 +237,21 @@ def process(api,entry,state,package,commit=True):
                     if 'film_h264' in outputs:
                         ready=ready and updated.get('video_convert_status')=='ready' and any(
                             variant.get('quality')=='high' for variant in updated.get('video_convert',[]))
-                    if ready: break
+                    if ready:
+                        cache_key=thumbnails.get('cache_key')
+                        break
                     time.sleep(1)
                 else: raise RuntimeError('Photos did not accept generated files')
             if commit:
                 atomic_json(state/('item-%s-%s.json' % (api.runner,item)),
                             {'item':item,'space':entry['_space'],'bytes':sum(p.stat().st_size for p in outputs.values()),
-                             'outputs':list(outputs),'cache_key':fresh.get('additional',{}).get('thumbnail',{}).get('cache_key'),
+                             'outputs':list(outputs),'cache_key':cache_key,
                              'source_compatible':bool(source_compatible),'source_identity':source_identity(fresh)})
     return True
 
-def scan_progress(offset,page_size,processed):
+def scan_progress(offset,page_size,processed,batch_size=BATCH_SIZE):
     """Keep draining work/pages; wait only after reaching the collection end."""
-    if processed>=BATCH_SIZE: return offset,True
+    if processed>=batch_size: return offset,True
     if page_size==100: return offset+100,True
     return 0,processed>0
 
@@ -274,18 +285,22 @@ def main():
     package=SimpleNamespace(pw_uid=uid,pw_gid=uid)
     retry_path=args.state/'retry.json'
     retries=json.loads(retry_path.read_text()) if retry_path.exists() else {}
-    cursors_path=args.state/'native-full-cursors.json'
+    cursors_path=args.state/'native-priority-cursors.json'
     cursors=json.loads(cursors_path.read_text()) if cursors_path.exists() else {}
     api_retry={}
+    phase='all' if args.action=='once' else 'preview'
     while True:
         busy=False
+        completed=0
+        batch_size=2 if phase=='video' else BATCH_SIZE
         assert_photos_version()
         users=[pwd.getpwnam(args.runner)] if args.runner else candidates()
         for user in users:
             api=NativePhotos(user.pw_name,args.state)
             for space in (('SYNO.Foto',) if args.test_item else ('SYNO.Foto','SYNO.FotoTeam')):
-                key=user.pw_name+':'+space
-                if api_retry.get(key,0)>time.time(): continue
+                api_key=user.pw_name+':'+space
+                key=api_key+':'+phase
+                if api_retry.get(api_key,0)>time.time(): continue
                 try:
                     offset=cursors.get(key,0)
                     # Watch newest media while progressing through older pages.
@@ -297,30 +312,37 @@ def main():
                             if args.test_item and entry['id'] not in args.test_item: continue
                             ledger=args.state/('item-%s-%s.json' % (user.pw_name,entry['id']))
                             previous=json.loads(ledger.read_text()) if ledger.exists() else None
-                            if not any(needs(entry,previous)): continue
-                            retry_key=key+':'+str(entry['id'])
+                            if not any(phase_needs(entry,previous,phase)): continue
+                            retry_key=api_key+':'+str(entry['id'])+':'+phase
                             if retries.get(retry_key,0)>time.time(): continue
                             entry['_space']=space
                             try:
-                                if process(api,entry,args.state,package):
-                                    logging.info('item=%s processed',entry['id']);count+=1
+                                if process(api,entry,args.state,package,phase=phase,previous=previous):
+                                    logging.info('item=%s processed phase=%s',entry['id'],phase);count+=1;completed+=1
                             except Exception as error:
                                 logging.warning('item=%s failed=%s',entry['id'],type(error).__name__)
                                 retries[retry_key]=time.time()+3600
                                 atomic_json(retry_path,retries)
-                            if count>=BATCH_SIZE: break
-                        if count>=BATCH_SIZE: break
+                            if count>=batch_size: break
+                        if count>=batch_size: break
                     last=pages[-1][1]
-                    cursors[key],more=scan_progress(offset,len(last),count)
+                    cursors[key],more=scan_progress(offset,len(last),count,batch_size)
                     busy=busy or more
                     atomic_json(cursors_path,cursors)
                 except ApiError as error:
                     logging.info('Local API unavailable code=%s',error.code)
-                    api_retry[key]=time.time()+60
+                    api_retry[api_key]=time.time()+60
                 except Exception as error:
                     logging.warning('Scan failed=%s',type(error).__name__)
-                    api_retry[key]=time.time()+60
+                    api_retry[api_key]=time.time()+60
         if args.action=='once': return
-        if not busy: time.sleep(60)
+        if phase=='preview':
+            if not busy:
+                phase='video'
+                logging.info('scheduler phase=video previews-scan-complete')
+        elif completed or not busy:
+            phase='preview'
+            logging.info('scheduler phase=preview')
+            if not completed and not busy: time.sleep(60)
 
 if __name__=='__main__': main()

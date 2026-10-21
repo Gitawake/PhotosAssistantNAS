@@ -116,6 +116,34 @@ class NativeTests(unittest.TestCase):
         self.assertEqual(n.scan_progress(300,8,1),(0,True))
         self.assertEqual(n.scan_progress(0,8,0),(0,False))
 
+    def test_preview_phase_never_requests_full_transcode(self):
+        e=entry();e['additional']['thumbnail']['sm']='broken'
+        self.assertEqual(n.phase_needs(e,None,'preview'),(True,False))
+        self.assertEqual(n.phase_needs(e,None,'video'),(False,True))
+        self.assertEqual(n.phase_needs(e,None,'all'),(True,True))
+        e['additional']['thumbnail']['sm']='ready'
+        self.assertEqual(n.phase_needs(e,None,'preview'),(False,False))
+    def test_video_batch_yields_after_two_jobs(self):
+        self.assertEqual(n.scan_progress(400,100,2,2),(400,True))
+        self.assertEqual(n.scan_progress(400,100,2,20),(500,True))
+
+    def test_preview_process_publishes_only_thumbnail_even_when_video_missing(self):
+        import pwd
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);source=root/'original.mp4';source.write_bytes(b'original')
+            e=entry();e.update(id=1,filesize=8,_space='SYNO.Foto')
+            e['additional']['thumbnail']['sm']='broken'
+            api=SimpleNamespace(runner=pwd.getpwuid(os.getuid()).pw_name,
+                open_original=lambda _:os.open(source,os.O_RDONLY),get=lambda *_:e)
+            def start(command,**kwargs):
+                self.assertEqual(command[3:5],['1','0'])
+                work=Path(command[2])
+                for label in ('SM','M','XL'): (work/(label+'.jpg')).write_bytes(b'preview')
+                return SimpleNamespace(communicate=lambda **_: (b'',b''),returncode=0)
+            with mock.patch.object(n,'require_space'), mock.patch.object(n.os,'chown'), mock.patch.object(n.subprocess,'Popen',side_effect=start):
+                self.assertTrue(n.process(api,e,root,SimpleNamespace(pw_uid=os.getuid(),pw_gid=os.getgid()),commit=False,phase='preview'))
+            self.assertEqual(list(root.iterdir()),[source])
+
     def test_local_api_allowlist(self):
         with tempfile.TemporaryDirectory() as folder:
             api=n.NativePhotos('someone',folder)

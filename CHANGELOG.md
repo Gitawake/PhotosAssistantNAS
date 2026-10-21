@@ -2,6 +2,11 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.5.5 — prioritize missing previews
+
+- Drain missing-preview pages before starting compatibility-video work. Preview jobs never transcode a video; process at most two video jobs before scanning previews again. Keep sequential decoding and existing resource limits.
+- Use independent scan cursors and media retry delays for the two phases. Store the accepted Photos cache key to avoid redundant compatibility probes after thumbnail publication.
+
 ## 0.5.4 — drain pending work without idle waits
 
 - Continue immediately after processing tasks or while historical pages remain; wait 60 seconds only when the scan reaches idle. Increase each batch from 2 to 20 successful tasks while keeping sequential decoding and existing CPU/memory limits.
