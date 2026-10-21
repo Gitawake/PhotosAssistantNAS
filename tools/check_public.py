@@ -9,6 +9,7 @@ ROOT_FILES = {'README.md', 'LICENSE', 'NOTICE.md', 'THIRD_PARTY.md', 'DISCLAIMER
               'bootstrap.sh', 'uninstall.sh'}
 ROOT_FILES |= {name[:-3]+'.zh-CN.md' for name in ROOT_FILES if name.endswith('.md')}
 PUBLIC_DIRS = {'src', 'scripts', 'tools', 'tests', 'docs', 'licenses', '.github'}
+PUBLIC_ASSETS = {'docs/media/overview.svg'}
 SUFFIXES = {'.py', '.sh', '.md', '.txt', '.yml', '.yaml', '.json', '.xml'}
 SKIP = {'.git', '__pycache__', '.pytest_cache', '.venv', 'dist', 'build'}
 PATTERNS = {
@@ -32,7 +33,7 @@ def public_files(root=ROOT):
         if path.is_symlink():
             raise ValueError('Public source must not contain symlinks: ' + str(rel))
         allowed = (len(rel.parts) == 1 and path.name in ROOT_FILES) or (
-            rel.parts[0] in PUBLIC_DIRS and path.suffix in SUFFIXES) or str(rel) == 'vendor/lock.json'
+            rel.parts[0] in PUBLIC_DIRS and path.suffix in SUFFIXES) or str(rel) in PUBLIC_ASSETS or str(rel) == 'vendor/lock.json'
         if not allowed:
             raise ValueError('Unexpected public source file: ' + str(rel))
         if path.stat().st_size > 1024 * 1024:

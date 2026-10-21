@@ -14,6 +14,12 @@ The scope is preview and compatibility-copy generation. It does not restore ever
 
 > **Risk of data corruption or loss:** preserving originals by design is not a data-safety guarantee. Bugs, interface changes, permission errors, power loss, and storage failures can affect media and album availability. Keep an independent backup, verify recovery, and test noncritical media first. Read the [data-safety disclaimer](DISCLAIMER.md).
 
+## How it works
+
+![PhotosAssistantNAS: media processing on your NAS](docs/media/overview.svg)
+
+Workflow illustration, not a screen recording. See the [NAS validation and repeatable walkthrough](docs/demo.md), or use the [community introduction draft](docs/community-post.md) to share the project with its tested scope and limitations.
+
 ## Behavior and boundaries
 
 - No Photos account, password, OTP, or session token; no new DSM login account.

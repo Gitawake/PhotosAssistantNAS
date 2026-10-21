@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
+  <title id="title">PhotosAssistantNAS: bring HEIC and HEVC processing back to your NAS</title>
+  <desc id="desc">Workflow illustration, not a screenshot. Photos indexes media; an isolated NAS worker generates missing previews and compatibility copies; results return to Photos. Originals stay in place. Tested on DSM 7.4.1 and Photos 1.9.1-10928; experimental.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1">
+      <stop stop-color="#101f32"/>
+      <stop offset="1" stop-color="#142e39"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#71d7c0"/>
+    </marker>
+  </defs>
+  <rect width="1200" height="600" rx="24" fill="url(#bg)"/>
+  <g font-family="Arial, Helvetica, sans-serif">
+    <text x="50" y="54" fill="#71d7c0" font-size="16" font-weight="700" letter-spacing="2">PHOTOSASSISTANTNAS</text>
+    <text x="50" y="105" fill="#f7fbff" font-size="35" font-weight="700">Let your NAS do the media processing.</text>
+    <text x="50" y="140" fill="#b9ccd9" font-size="19">HEIC / HEIF previews · video thumbnails · H.264 / AAC compatibility copies</text>
+
+    <rect x="50" y="185" width="310" height="210" rx="16" fill="#1b3446" stroke="#3a5667"/>
+    <text x="74" y="220" fill="#71d7c0" font-size="14" font-weight="700">01 / SYNOLOGY PHOTOS</text>
+    <rect x="75" y="242" width="65" height="49" rx="7" fill="#294b60"/>
+    <path d="M81 282 L98 262 L110 273 L120 263 L134 282 Z" fill="#9cdccf"/>
+    <circle cx="125" cy="253" r="5" fill="#e5cf91"/>
+    <text x="156" y="270" fill="#f7fbff" font-size="22" font-weight="700">Your originals</text>
+    <text x="74" y="321" fill="#c6d6df" font-size="17">Photos indexes new media.</text>
+    <text x="74" y="351" fill="#c6d6df" font-size="17">Files, names and folders stay.</text>
+
+    <path d="M370 286 H424" stroke="#71d7c0" stroke-width="3" marker-end="url(#arrow)"/>
+    <rect x="440" y="185" width="320" height="210" rx="16" fill="#1b3446" stroke="#71d7c0" stroke-width="2"/>
+    <text x="464" y="220" fill="#71d7c0" font-size="14" font-weight="700">02 / ISOLATED NAS WORKER</text>
+    <text x="464" y="269" fill="#f7fbff" font-size="22" font-weight="700">Fill missing resources</text>
+    <text x="464" y="308" fill="#c6d6df" font-size="17">Read-only original input.</text>
+    <text x="464" y="338" fill="#c6d6df" font-size="17">Private media libraries.</text>
+    <text x="464" y="368" fill="#c6d6df" font-size="17">No client Assistant needed</text>
+    <text x="464" y="388" fill="#c6d6df" font-size="14">for these background tasks.</text>
+
+    <path d="M770 286 H824" stroke="#71d7c0" stroke-width="3" marker-end="url(#arrow)"/>
+    <rect x="840" y="185" width="310" height="210" rx="16" fill="#1b3446" stroke="#3a5667"/>
+    <text x="864" y="220" fill="#71d7c0" font-size="14" font-weight="700">03 / BACK TO PHOTOS</text>
+    <text x="864" y="269" fill="#f7fbff" font-size="22" font-weight="700">Preview and play</text>
+    <text x="864" y="308" fill="#c6d6df" font-size="17">JPEG thumbnails / previews.</text>
+    <text x="864" y="338" fill="#c6d6df" font-size="17">Saved compatibility video.</text>
+    <text x="864" y="368" fill="#c6d6df" font-size="17">Keep results after uninstall.</text>
+
+    <rect x="50" y="425" width="1100" height="64" rx="12" fill="#102735" stroke="#345160"/>
+    <text x="74" y="464" fill="#d5e7ef" font-size="18">SSH install · no Photos password / OTP · no Container Manager · no real-time transcoding</text>
+    <text x="50" y="529" fill="#e5cf91" font-size="17" font-weight="700">Experimental · validated: x64 / DSM 7.4.1 / Photos 1.9.1-10928</text>
+    <text x="50" y="562" fill="#a7bfcd" font-size="15">Workflow illustration, not a screen recording. Read compatibility notes and the data-safety disclaimer before installing.</text>
+  </g>
+</svg>

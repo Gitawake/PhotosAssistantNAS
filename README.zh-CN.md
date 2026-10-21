@@ -14,6 +14,12 @@ PhotosAssistantNAS 为 Synology Photos 补回服务端媒体处理能力：在 N
 
 > **数据损坏风险：** 设计上保留原件，不代表不会发生损坏或丢失。缺陷、接口变化、权限错误、断电及存储故障都可能影响数据和相册可用性。部署前请完成独立备份并验证恢复能力，先用少量非重要素材测试。详见 [数据安全免责声明](DISCLAIMER.zh-CN.md)。
 
+## 工作方式
+
+![PhotosAssistantNAS：在 NAS 上完成媒体处理](docs/media/overview.svg)
+
+上图是流程示意，不是实机录像。详见 [NAS 验证与可复现演示步骤](docs/demo.zh-CN.md)；也可以使用[社区介绍帖草稿](docs/community-post.zh-CN.md)，连同已验证范围和限制一起介绍项目。
+
 ## 行为与边界
 
 - 无需 Photos 账号、密码、OTP 或会话令牌；不创建 DSM 登录账号。
