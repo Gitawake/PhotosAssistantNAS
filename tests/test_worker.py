@@ -27,7 +27,7 @@ class WorkerTests(unittest.TestCase):
     def test_duration_and_output_budget(self):
         for duration in (0,-1,21601,float('nan'),float('inf')):
             with self.assertRaises(ValueError): video_budget(duration)
-        self.assertLess(video_budget(60),2*1024**3)
+        self.assertEqual(video_budget(60),3*22500000+1024**3)
         self.assertGreater(video_budget(21600),16*1024**3)
     def test_space_guard_and_running_process_cleanup(self):
         with mock.patch('worker.shutil.disk_usage',return_value=SimpleNamespace(free=FREE_HEADROOM-1)):

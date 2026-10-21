@@ -19,8 +19,8 @@ def require_space(work, needed=0):
 def video_budget(duration):
     if not math.isfinite(duration) or duration<=0 or duration>21600:
         raise ValueError('Unsupported video duration')
-    # Two output copies during publication, bitrate allowance plus scratch.
-    return 2*math.ceil(duration*3000000/8)+1024**3
+    # Decoder output, publication staging and Photos final copy, plus scratch.
+    return 3*math.ceil(duration*3000000/8)+1024**3
 
 class ApiError(Exception):
     def __init__(self, code):
