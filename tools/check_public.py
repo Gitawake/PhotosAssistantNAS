@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ROOT_FILES = {'README.md', 'LICENSE', 'NOTICE.md', 'THIRD_PARTY.md', 'DISCLAIMER.md', 'ACKNOWLEDGEMENTS.md',
               'SECURITY.md', 'CONTRIBUTING.md', 'CHANGELOG.md', '.gitignore', '.gitattributes',
               'bootstrap.sh', 'uninstall.sh'}
+ROOT_FILES |= {name[:-3]+'.zh-CN.md' for name in ROOT_FILES if name.endswith('.md')}
 PUBLIC_DIRS = {'src', 'scripts', 'tools', 'tests', 'docs', 'licenses', '.github'}
 SUFFIXES = {'.py', '.sh', '.md', '.txt', '.yml', '.yaml', '.json', '.xml'}
 SKIP = {'.git', '__pycache__', '.pytest_cache', '.venv', 'dist', 'build'}

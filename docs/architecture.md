@@ -1,5 +1,7 @@
 # Architecture
 
+[English](architecture.md) | [简体中文](architecture.zh-CN.md)
+
 1. The SSH installer verifies the locally built payload checksum and the supported Photos version, then creates a root-controlled application directory and one systemd unit.
 2. A root coordinator calls the existing DSM synowebapi executable using existing local user identities. It does not authenticate via password, keep SID cookies, create a DSM user, or expose an HTTP service.
 3. The scanner resolves known missing items through Photos folder metadata and opens originals read-only using no-follow directory traversal. For video it passes that one descriptor through privilege drop to FFmpeg/FFprobe's seekable `fd:` input protocol. No source-video copy, reflink, ACL change or Btrfs feature is needed. Images retain private reflink/copy staging for ImageMagick.

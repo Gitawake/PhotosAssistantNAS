@@ -1,5 +1,7 @@
 # Security policy
 
+[English](SECURITY.md) | [简体中文](SECURITY.zh-CN.md)
+
 This is experimental software that installs a root service on a personal NAS. Read the installer, coordinator and uninstall code before granting administrator permission. Build and review a pinned revision; source openness is not a security certification.
 
 ## Boundaries

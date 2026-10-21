@@ -1,5 +1,7 @@
 # Compatibility and validation
 
+[English](compatibility.md) | [简体中文](compatibility.zh-CN.md)
+
 ## Validated target
 
 | Item | Tested |

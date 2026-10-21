@@ -36,6 +36,9 @@ def main():
                 add_bytes(archive, 'licenses/' + path.name, path.read_bytes())
             for name in ('LICENSE', 'NOTICE.md', 'THIRD_PARTY.md', 'DISCLAIMER.md', 'ACKNOWLEDGEMENTS.md'):
                 add_bytes(archive, name, (ROOT / name).read_bytes())
+                if name.endswith('.md'):
+                    translated=name[:-3]+'.zh-CN.md'
+                    add_bytes(archive, translated, (ROOT / translated).read_bytes())
             add_bytes(archive, 'runtime-manifest.json', json.dumps(manifest, sort_keys=True, indent=2).encode())
     checksum_name = payload.name + '.sha256'
     (folder / checksum_name).write_text(sha256(payload) + '  ' + payload.name + '\n')
@@ -45,6 +48,11 @@ def main():
         files.append(name)
     (folder / 'README-SSH.md').write_bytes((ROOT / 'README.md').read_bytes())
     files.append('README-SSH.md')
+    (folder / 'README-SSH.zh-CN.md').write_bytes((ROOT / 'README.zh-CN.md').read_bytes())
+    files.append('README-SSH.zh-CN.md')
+    for name in ('README-SSH.md','README-SSH.zh-CN.md'):
+        document=folder/name
+        document.write_text(document.read_text().replace('](README.md)','](README-SSH.md)').replace('](README.zh-CN.md)','](README-SSH.zh-CN.md)'))
     result = args.output / ('PhotosAssistantNAS-' + VERSION + '-x64.private.tar')
     with tarfile.open(result, 'w', format=tarfile.GNU_FORMAT) as archive:
         for name in sorted(files):

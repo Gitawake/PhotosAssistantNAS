@@ -1,20 +1,22 @@
-# 数据安全与使用风险免责声明
+# Data safety and risk disclaimer
 
-本项目是社区实验性工具，与 Synology 无隶属或担保关系。软件按现状提供；项目不对其无缺陷、持续兼容、适合特定用途或数据完整性作出保证。项目代码的许可、担保排除及责任限制以 LICENSE 为准，并受适用法律约束。
+[English](DISCLAIMER.md) | [简体中文](DISCLAIMER.zh-CN.md)
 
-## 可能发生的影响
+This is an experimental community tool, independent of Synology and without its endorsement or warranty. The software is provided as is, without guarantees of freedom from defects, continued compatibility, fitness for a particular purpose, or data integrity. Code licensing, warranty exclusions, and liability limitations are governed by LICENSE and applicable law.
 
-程序设计为保留原始照片、视频及目录结构，只补充 Photos 的预览与兼容视频，但这不等于数据安全保证。程序缺陷、未知媒体格式、Photos/DSM 接口变化、权限配置错误、并发操作、资源不足、断电及文件系统或存储设备故障，都可能造成数据损坏、丢失、索引异常、预览错误、相册不可用或其他非预期影响。
+## Possible effects
 
-安装会创建具有 root 权限的协调服务，并对 Photos 提交持久化数据。运行可能占用较多 CPU、内存和磁盘空间，影响 NAS 响应或其他任务。解码隔离、空间检查、版本检查及既有测试用于降低风险，不能消除风险。
+The program is designed to preserve original photos, videos, and directories while adding Photos previews and compatibility videos. That design is not a data-safety guarantee. Bugs, unknown media formats, Photos/DSM interface changes, permission errors, concurrent operations, insufficient resources, power loss, and filesystem or storage failures can cause corruption, loss, indexing problems, incorrect previews, unavailable albums, or other unexpected effects.
 
-## 使用前准备
+Installation creates a root coordinator service and submits persistent data to Photos. Processing can consume substantial CPU, memory, and storage and affect NAS responsiveness or other tasks. Decoder isolation, space checks, version checks, and existing tests reduce risk; they do not eliminate it.
 
-- 在 NAS 之外保留原始媒体及必要配置的独立备份，并确认能够恢复。RAID、同盘副本或预览缓存不能替代独立备份。
-- 先在少量非重要或合成素材上试运行，核对结果、空间使用、服务启停及卸载行为。
-- 升级 DSM、Photos、依赖库或本项目后重新验证；不要跳过版本与安全检查来强行运行。
-- 不要将本项目作为原始媒体唯一的保护措施；原始媒体的保管和备份由使用者负责。
+## Before use
 
-卸载只清理本项目的服务、程序、运行状态和临时文件，**不会删除已经提交给 Photos 的缩略图、预览和兼容视频，也不构成数据修复或完整回滚操作**。发生异常时，应先停止服务，保留经脱敏的错误信息，并依据自己的备份方案恢复。
+- Keep an independent backup of original media and necessary configuration outside the NAS, and verify recovery. RAID, same-disk copies, and preview caches are not substitutes for independent backups.
+- Test a small set of noncritical or synthetic media first. Check results, storage use, start/stop, and uninstall behavior.
+- Revalidate after upgrading DSM, Photos, dependencies, or this project. Do not bypass version or safety checks to force operation.
+- Do not rely on this project as your only protection for originals. Users remain responsible for preserving and backing up their media.
 
-在适用法律允许的范围内，使用者自行评估和承担部署、运行及修改本项目的风险；贡献者不承诺提供数据恢复、持续维护或对损失的补偿。本说明不排除适用法律不得排除的责任。
+Uninstall removes this project's service, application, state, and temporary files. **It does not delete thumbnails, previews, or compatibility videos already submitted to Photos, and is neither a data-repair procedure nor a complete rollback.** If problems occur, stop the service, retain redacted error information, and recover according to your own backup plan.
+
+To the extent permitted by applicable law, users assess and accept the risks of deploying, running, and modifying this project. Contributors do not promise data recovery, continuing maintenance, or compensation for losses. This statement does not exclude liability that applicable law does not allow to be excluded.

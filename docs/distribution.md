@@ -1,5 +1,7 @@
 # Source publication and binary distribution
 
+[English](distribution.md) | [简体中文](distribution.zh-CN.md)
+
 ## Current status: source only
 
 Publish project source, documentation, tests, dependency lock and license texts. Do not upload the personal build's installer tar, downloaded SPKs or runtime binaries as GitHub release assets. The CI workflow checks and packages source; it does not publish binaries or deploy to a NAS.

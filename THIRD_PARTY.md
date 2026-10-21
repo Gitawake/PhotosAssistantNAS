@@ -1,5 +1,7 @@
 # Third-party components
 
+[English](THIRD_PARTY.md) | [简体中文](THIRD_PARTY.zh-CN.md)
+
 The source repository contains project scripts, the dependency lock, and copied upstream license texts. It does not include downloaded SPKs, decoder binaries, private NAS state, or generated media.
 
 | Component | Source | Handling |

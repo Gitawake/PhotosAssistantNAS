@@ -1,5 +1,7 @@
 # Attribution
 
+[English](NOTICE.md) | [简体中文](NOTICE.zh-CN.md)
+
 The project initially explored the server-side thumbnail approach in:
 
 - https://github.com/Gitawake/synology-photos-server-side-thumbnailgen

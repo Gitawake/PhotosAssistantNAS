@@ -1,88 +1,89 @@
 # PhotosAssistantNAS
 
-**让群晖相册的 HEIC/HEVC 处理，重新回到 NAS。**
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-PhotosAssistantNAS 为 Synology Photos 补回服务端媒体处理能力：在 NAS 上生成 HEIC/HEIF 照片预览、视频缩略图及 H.264/AAC 兼容视频副本，承担原本需要客户端 Image Assistant 完成的这些工作。通过 SSH 一键部署，无需 Photos 账号、密码或 OTP，不依赖 Container Manager。
+**Bring HEIC/HEVC processing back to your Synology NAS.**
 
-在 DSM 7.2.2 前后相关调整中，群晖将部分媒体处理转向终端设备，Photos 的 HEIC/HEVC 预览与兼容副本因此可能需要客户端协助。本项目的目标是让 NAS 自己完成这部分后台工作：原片仍在原处，相册仍用 Synology Photos。背景见 [群晖官方说明](https://www.synology.com/en-us/products/status/eol-video-codec-support) 和 [Image Assistant 常见问题](https://kb.synology.com/en-global/DSM/tutorial/Frequently_asked_questions_about_Synology_Image_Assistant)。
+PhotosAssistantNAS restores server-side media processing for Synology Photos: generate HEIC/HEIF photo previews, video thumbnails, and H.264/AAC compatibility copies on the NAS, taking over these tasks from client-side Image Assistant. Deploy over SSH without a Photos account, password, OTP, or Container Manager.
 
-它补齐的是相册的预览和兼容副本生成，不是还原全部旧版 DSM 功能，也不提供实时转码播放。
+With the changes introduced around DSM 7.2.2, Synology moved some media processing to end devices, so HEIC/HEVC previews and compatibility copies may require client assistance. This project brings that background work back to the NAS: keep your originals in place and keep using Synology Photos. See [Synology's announcement](https://www.synology.com/en-us/products/status/eol-video-codec-support) and the [Image Assistant FAQ](https://kb.synology.com/en-global/DSM/tutorial/Frequently_asked_questions_about_Synology_Image_Assistant).
 
-**实验性项目，目前仅发布源码。** 已验证 x86_64、DSM 7.4.1-90080 Update 1、Synology Photos **1.9.1-10928**。使用未公开的本机 Photos 接口；Photos 升级后会拒绝继续处理，不能视为任意 DSM 7 或未来版本通用。项目与 Synology 无隶属关系。
+The scope is preview and compatibility-copy generation. It does not restore every feature of older DSM versions or provide real-time playback transcoding.
 
-> **数据损坏风险：** 设计上保留原件，不代表不会发生损坏或丢失。缺陷、接口变化、权限错误、断电及存储故障都可能影响数据和相册可用性。部署前请完成独立备份并验证恢复能力，先用少量非重要素材测试。详见 [数据安全免责声明](DISCLAIMER.md)。
+**Experimental; source-only distribution.** Validated on x86_64, DSM 7.4.1-90080 Update 1, and Synology Photos **1.9.1-10928**. The worker uses undocumented local Photos interfaces and refuses to process media after an unvalidated Photos version change. Support for all DSM 7 releases or future versions is not implied. This project is independent of Synology.
 
-## 行为与边界
+> **Risk of data corruption or loss:** preserving originals by design is not a data-safety guarantee. Bugs, interface changes, permission errors, power loss, and storage failures can affect media and album availability. Keep an independent backup, verify recovery, and test noncritical media first. Read the [data-safety disclaimer](DISCLAIMER.md).
 
-- 无需 Photos 账号、密码、OTP 或会话令牌；不创建 DSM 登录账号。
-- 保留原始文件、文件名、目录结构；通过 Photos 接口保存附加结果，不另建相册库。
-- 只补已知缺失/损坏状态的缩略图与 high 兼容副本，跳过已有可用结果。
-- 生成 JPEG 与最高 720p 范围的 H.264/AAC MP4；不是实时转码。编码、码率、帧率及 HDR 映射不保证与官方 Assistant 完全相同。
-- root 协调进程调用 DSM 本机接口；解码子进程使用未注册的数值 UID、独立网络命名空间、禁止提权并限制资源。详细边界见 [安全说明](SECURITY.md)。
-- 卸载移除本服务程序、systemd 注册、运行状态与临时文件，**保留 Photos 已接收的预览和兼容视频**。系统审计日志、用户自行保留的下载文件不会被抹除。
+## Behavior and boundaries
 
-## 私有依赖
+- No Photos account, password, OTP, or session token; no new DSM login account.
+- Original files, names, and directories stay in place. Results are submitted through Photos interfaces, without a separate photo library.
+- Only known missing/broken thumbnail states and missing high compatibility copies are processed. Existing usable results are skipped.
+- Outputs are JPEG previews and H.264/AAC MP4 within a 720p bounding box. Encoding, bitrate, frame rate, and HDR mapping are not guaranteed to match official Assistant outputs. This is not real-time transcoding.
+- A root coordinator uses DSM's local interface. Decoders run under an unregistered numeric UID with a separate network namespace, no privilege escalation, and resource limits. See [security boundaries](SECURITY.md).
+- Uninstall removes this service, systemd registration, application, state, and temporary files. **Previews and compatibility copies already accepted by Photos are retained.** System audit logs and downloads kept by the user are not erased.
 
-截至 2026-10-21，选择 SynoCommunity 官方提供的最新适用 DSM x64 构建，固定下载地址及 SHA256（见 `vendor/lock.json`）：
+## Private dependencies
 
-| 依赖 | 版本 | 用途 |
+As checked on 2026-10-21, these are the latest applicable DSM x64 builds available from SynoCommunity. URLs and SHA256 digests are pinned in `vendor/lock.json`.
+
+| Dependency | Version | Purpose |
 | --- | --- | --- |
-| FFmpeg / FFprobe | 8.1.3-5 | 只读句柄视频输入、缩略图和 H.264/AAC 兼容输出 |
-| ImageMagick | 7.1.2-16 | HEIC/HEIF 与 JPEG 缩略图 |
-| SynoCli Video Drivers | 1.5-9 | 私有加载所需动态库及其依赖闭包 |
+| FFmpeg / FFprobe | 8.1.3-5 | Read-only descriptor video input, thumbnails, H.264/AAC compatibility output |
+| ImageMagick | 7.1.2-16 | HEIC/HEIF processing and JPEG thumbnails |
+| SynoCli Video Drivers | 1.5-9 | Required private shared libraries and their dependency closure |
 
-仅提取所需文件，不执行这些套件的安装脚本。系统自带 Python、systemd、glibc 和 DSM 本机接口不由本项目升级；不逐个混换上游构建内的底层库，以免破坏 ABI 兼容。依赖更新通过新的已验证源码提交进行，不静默追随最新版。
+Only required files are extracted; upstream package installation scripts are never run. This project does not upgrade DSM's Python, systemd, glibc, or local interfaces. Libraries within an upstream build are not individually swapped, to preserve ABI compatibility. Dependency updates use new validated source commits rather than silently tracking the latest version.
 
-## SSH 在线一键安装
+## One-command SSH installation
 
-GitHub 只托管源码与引导脚本，不提供远程 SSH 代理，也不接收 NAS 或 Photos 凭据。不使用 GitHub Releases。
+GitHub hosts source and bootstrap scripts. It is not an SSH relay and does not receive NAS or Photos credentials. GitHub Releases are not used.
 
-在 **NAS 自己的 SSH 终端**执行：
+Run in **your NAS's own SSH terminal**:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Gitawake/PhotosAssistantNAS/main/bootstrap.sh -o "$HOME/photos-assistant-install.sh" && sudo sh "$HOME/photos-assistant-install.sh"
 ```
 
-引导程序先显示数据风险提示并检查 NAS 环境，将 `main` 解析为一个固定提交，下载该提交的源码，在 NAS 上下载并校验锁定的上游依赖、本机构建，再安装服务。依赖、源码和构建临时文件在结束后清理。整个过程无需 Photos 账号、密码或 OTP；sudo 仍是 DSM 管理员安装权限。
+The bootstrap displays the data-risk warning, checks the NAS, resolves `main` to a fixed commit, downloads that source, verifies pinned upstream dependencies, builds locally on the NAS, and installs the service. Temporary dependencies, source, and build files are cleaned up afterward. No Photos credentials or OTP are needed; sudo still requires DSM administrator authorization.
 
-如果网络无法访问 `raw.githubusercontent.com`，可改用 GitHub 官方 API 下载同一入口（仍校验 HTTPS）：
+If `raw.githubusercontent.com` is inaccessible, use the official GitHub API to download the same entry point, with HTTPS verification:
 
 ```sh
 curl -fsSL -H 'Accept: application/vnd.github.raw+json' 'https://api.github.com/repos/Gitawake/PhotosAssistantNAS/contents/bootstrap.sh?ref=main' -o "$HOME/photos-assistant-install.sh" && sudo sh "$HOME/photos-assistant-install.sh"
 ```
 
-查看已下载的脚本后再执行也可以。需要固定版本时，应从同一完整提交的 raw URL 下载入口，并传入 `--ref <40位提交SHA>`。只检查环境而不下载或安装可加 `--check`；只下载并构建、验证完成即清理而不安装可加 `--build-only`；其他卷使用 `--volume /volume2`。需要能访问 GitHub 和 SynoCommunity 的 HTTPS 网络，临时构建至少需要 2 GiB 空间。
+You can review the downloaded script before running it. To pin a version, download the entry point from that full commit's raw URL and pass `--ref <40-character-commit-SHA>`. Use `--check` for environment checks without downloading or installing, or `--build-only` to download/build and clean up without installation. Use `--volume /volume2` for another volume. HTTPS access to GitHub and SynoCommunity and at least 2 GiB of temporary build space are required.
 
-在线卸载：
+Online uninstall:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Gitawake/PhotosAssistantNAS/main/uninstall.sh -o "$HOME/photos-assistant-uninstall.sh" && sudo sh "$HOME/photos-assistant-uninstall.sh"
 ```
 
-在线卸载入口调用已安装的 root 控制卸载程序，保留所有已经提交给 Photos 的预览与兼容视频。GitHub 不可用时，仍可直接使用下方的本机卸载命令。
+The online entry calls the installed root-controlled uninstaller, retaining all previews and compatibility copies submitted to Photos. When GitHub is unavailable, use the local uninstall command below.
 
-## 手动构建并安装（可选）
+## Manual build and installation (optional)
 
-
-构建脚本使用 Python 3.8+；开发 CI 覆盖 Python 3.9 与 3.12。没有 PyPI 依赖，无需 root 构建；NAS 安装使用 DSM 自带 Python 3 和管理员权限。
+The builder uses Python 3.8+; CI covers Python 3.9 and 3.12. There are no PyPI dependencies and building does not require root. NAS installation uses DSM's Python 3 and administrator privileges.
 
 ```sh
 python3 tools/build.py
 ```
 
-构建脚本从锁定的 SynoCommunity 官方地址下载三个原始 SPK，校验 SHA256，仅提取运行时文件，**不执行 SPK 安装脚本、不依赖本地旧版 SPK**。结果位于 `dist/PhotosAssistantNAS-0.5.0-x64.private.tar`。
+The builder downloads three original SPKs from pinned official SynoCommunity URLs, verifies SHA256, and extracts runtime files only. **It does not run SPK installation scripts or depend on an older local SPK.** Output: `dist/PhotosAssistantNAS-0.5.0-x64.private.tar`.
 
-**这个构建结果仅供个人使用，不应上传到公开 Releases。** 当前锁定 FFmpeg 启用了 `--enable-gpl --enable-version3 --enable-nonfree`。公开分发前需要更换为可再分发的构建，并逐项完成来源、许可证及对应源码审计，不能只附几份许可证。见 [分发说明](docs/distribution.md)。
+**This build is for personal use; do not upload it to public Releases.** The pinned FFmpeg enables `--enable-gpl --enable-version3 --enable-nonfree`. Public binary distribution requires a redistributable build and a component-by-component origin, license, and corresponding-source audit; attaching a few license texts is insufficient. See [distribution requirements](docs/distribution.md).
 
-把构建结果复制到自己的 NAS，解压后在 SSH 中执行：
+Copy the build to your NAS, extract it, and run over SSH:
 
 ```sh
 sudo sh install.sh
 ```
 
-这里的 sudo 是 DSM 管理员安装授权，不是 Photos 登录。默认安装到 `/volume1/@PhotosAssistantNAS`，支持 `--volume /volume2`。安装会注册并启动 `photos-assistant-nas.service`、启用开机运行。开始后会扫描已有媒体并生成缺失副本，可能消耗 CPU 与额外存储空间。
+Sudo authorizes installation as a DSM administrator; it is not a Photos login. The default location is `/volume1/@PhotosAssistantNAS`; `--volume /volume2` is supported. Installation starts `photos-assistant-nas.service` and enables startup at boot. It scans existing media and generates missing results, using CPU and additional storage.
 
-## 管理与卸载
+## Management and uninstall
 
 ```sh
 sudo systemctl status photos-assistant-nas.service
@@ -91,11 +92,11 @@ sudo systemctl start photos-assistant-nas.service
 sudo /bin/python3 -I /volume1/@PhotosAssistantNAS/uninstall.py
 ```
 
-也可在解压后的安装目录执行 `sudo sh uninstall.sh`。安装到其他卷时，卸载命令也加 `--volume /volume2`。
+Alternatively, run `sudo sh uninstall.sh` in the extracted installer directory. Add `--volume /volume2` when uninstalling from another volume.
 
-视频不设置固定源文件大小上限，最长 6 小时。root 只读打开原视频，将一个文件句柄传给隔离进程；私有 FFmpeg 使用可随机定位的 `fd:` 协议流式读取，**不复制或克隆整份源视频、不修改原文件权限，也不依赖 Btrfs**。HEIC/HEIF 图片仍使用私有临时输入（优先克隆，不支持时分块复制）。按时长与目标码率预留解码输出、发布暂存、Photos 最终副本三份输出及临时空间，解码期间每 5 秒检查至少 4 GiB 可用空间，不足则中止；其他程序仍可能同时写满磁盘，这不是空间配额。单个生成文件最多 16 GiB，保留线程、优先级限制及失败一小时后重试。兼容副本会额外占用容量；不要为清理副本而删除整个 `@eaDir`。
+Videos have no fixed input-size cap and a maximum duration of six hours. Root opens the original read-only and passes one descriptor to the isolated decoder. Private FFmpeg streams through the seekable `fd:` protocol: **no full source-video copy or clone, no original permission changes, and no Btrfs requirement**. HEIC/HEIF images still use private temporary input, preferring a clone with a chunked-copy fallback. Space is reserved from duration and target bitrate for decoder output, publication staging, the final Photos copy, and scratch. Free space is checked every five seconds during decoding; processing stops below 4 GiB. This is not a storage quota; other processes can still fill the disk. Each generated file is limited to 16 GiB. Thread/priority limits and a one-hour retry delay remain in place. Compatibility copies consume additional storage; do not delete an entire `@eaDir` directory to remove them.
 
-## 测试、兼容性与贡献
+## Tests, compatibility, and contributions
 
 ```sh
 python3 -m unittest discover -s tests -v
@@ -103,13 +104,13 @@ python3 tools/check_public.py
 python3 tools/package_source.py
 ```
 
-- [兼容性与实机验证](docs/compatibility.md)：区分已验证、未验证能力。
-- [架构与权限](docs/architecture.md)：说明 root 协调与解码隔离。
-- [开发指南](CONTRIBUTING.md)：使用合成素材，不提交 NAS 地址、凭据或私人媒体。
-- [许可证及来源](THIRD_PARTY.md)：项目源码采用 MIT；第三方运行时不因此变为 MIT。
+- [Compatibility and hardware validation](docs/compatibility.md): tested behavior and unvalidated cases.
+- [Architecture and privileges](docs/architecture.md): root coordination and decoder isolation.
+- [Contributing](CONTRIBUTING.md): use synthetic media; do not submit NAS addresses, credentials, or private media.
+- [Third-party components](THIRD_PARTY.md): project source is MIT; third-party runtimes do not automatically become MIT.
 
-源码包只包含公开文件，不包含私有运行时、实验安装包或原始调试记录。完整数据风险说明见 [DISCLAIMER.md](DISCLAIMER.md)。
+Source archives contain public files only, without private runtimes, prototype installers, or raw debugging records. Read the full [disclaimer](DISCLAIMER.md).
 
-## 项目灵感与致谢
+## Inspiration and acknowledgements
 
-本项目的初始灵感来自 [Gitawake/synology-photos-server-side-thumbnailgen](https://github.com/Gitawake/synology-photos-server-side-thumbnailgen)：将相册媒体处理放回 NAS 服务端。感谢原作者 octavianx、Gitawake 仓库维护者，以及 FFmpeg、ImageMagick、SynoCommunity 和所有底层依赖的贡献者。原有 MIT 版权声明已保留；完整来源、依赖引用和致谢见 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md)，第三方使用与许可边界见 [THIRD_PARTY.md](THIRD_PARTY.md)。
+The initial inspiration was [Gitawake/synology-photos-server-side-thumbnailgen](https://github.com/Gitawake/synology-photos-server-side-thumbnailgen): moving photo-library processing back to the NAS. Thank you to original author octavianx, the Gitawake repository maintainer, and the contributors to FFmpeg, ImageMagick, SynoCommunity, and their dependencies. The original MIT copyright notice is retained. See [acknowledgements](ACKNOWLEDGEMENTS.md) for attribution and dependency references, and [THIRD_PARTY.md](THIRD_PARTY.md) for usage and licensing boundaries.
