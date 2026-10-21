@@ -1,0 +1,21 @@
+# Local build outputs, downloaded dependencies and virtual environments
+/dist/
+/build/
+/vendor/downloads/
+__pycache__/
+*.py[cod]
+.venv/
+.uv/
+.pytest_cache/
+.DS_Store
+# NAS state and private diagnostics must never be committed
+/state/
+/private/
+*.log
+.env
+.env.*
+session.json
+credentials.json
+*.pem
+id_rsa*
+id_ed25519*

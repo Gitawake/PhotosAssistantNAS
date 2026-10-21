@@ -1,0 +1,27 @@
+name: Bug report
+description: Report a problem without credentials, addresses, or private media.
+title: '[Bug] '
+body:
+  - type: markdown
+    attributes:
+      value: 'Never attach passwords, OTPs, sessions, private media, or unredacted logs. Use the Security policy for vulnerabilities.'
+  - type: input
+    id: versions
+    attributes:
+      label: NAS architecture, DSM version, Photos version
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction using synthetic media
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted error codes and service status
