@@ -2,6 +2,11 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## Main branch documentation
+
+- Identify 0.6.1 as the current primary baseline, with its existing experimental/version limits.
+- Document media selection, preview/video task separation, event triggers, retained resources and AME research boundaries. Runtime behavior and pinned dependencies are unchanged.
+
 ## 0.6.1 — bounded HDR color processing
 
 - Reduce high-frame-rate inputs before expensive filters. On eligible VAAPI jobs, rotate and resize on the GPU before CPU HDR conversion; keep full-range conversion on the CPU.

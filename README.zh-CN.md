@@ -16,6 +16,8 @@ PhotosAssistantNAS 为 Synology Photos 补回服务端媒体处理能力：在 N
 
 > **数据损坏风险：** 设计上保留原件，不代表不会发生损坏或丢失。缺陷、接口变化、权限错误、断电及存储故障都可能影响数据和相册可用性。部署前请完成独立备份并验证恢复能力，先用少量非重要素材测试。详见 [数据安全免责声明](DISCLAIMER.zh-CN.md)。
 
+**当前主力版本：`main` 分支的 0.6.1。** 这是已部署、在下述兼容范围内完成 NAS 验证的基线，不代表全机型通用或生产级保证。一键安装入口跟随 `main`，不需要 GitHub Releases 或公开运行时二进制。参见[职责与处理规则](docs/scope.zh-CN.md)、[验证范围](docs/compatibility.zh-CN.md)和[更新记录](CHANGELOG.zh-CN.md)。
+
 ## 哪些用户适合使用
 
 | 使用方式 | 本项目的作用 |

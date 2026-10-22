@@ -16,6 +16,8 @@ The scope is preview and compatibility-copy generation. It does not restore ever
 
 > **Risk of data corruption or loss:** preserving originals by design is not a data-safety guarantee. Bugs, interface changes, permission errors, power loss, and storage failures can affect media and album availability. Keep an independent backup, verify recovery, and test noncritical media first. Read the [data-safety disclaimer](DISCLAIMER.md).
 
+**Current primary version: 0.6.1 on `main`.** This is the deployed and NAS-validated baseline within the compatibility limits below, not a declaration of universal or production-grade support. The one-command installer follows `main`; no GitHub Release or public runtime binary is required. See [scope and processing decisions](docs/scope.md), [validation](docs/compatibility.md), and the [changelog](CHANGELOG.md).
+
 ## Who this is for
 
 | Your workflow | When this project helps |
