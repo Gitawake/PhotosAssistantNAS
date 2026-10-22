@@ -43,3 +43,5 @@ This project does not implement these codecs or claim ownership of third-party w
 Synology Photos is the target platform, not a dependency supplied or redistributed by this project. Thank you to Synology for its photo product. This project is independent of Synology and is not endorsed by it.
 
 Optional GPU acceleration also uses Intel’s [media-driver](https://github.com/intel/media-driver), [gmmlib](https://github.com/intel/gmmlib), and [legacy VAAPI driver](https://github.com/intel/intel-vaapi-driver), packaged by SynoCommunity. Thank you to their maintainers and contributors.
+
+Thank you to [Jellyfin-FFmpeg](https://github.com/jellyfin/jellyfin-ffmpeg) contributors for SIMD tone mapping and color-processing work included in the pinned SynoCommunity FFmpeg build. The AME component layout was studied as an interoperability reference using official Synology packages; no AME binaries or activation/license implementation are copied into this project. See [AME reference](docs/ame-reference.md).

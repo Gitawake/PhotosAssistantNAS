@@ -2,6 +2,11 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.6.1 — bounded HDR color processing
+
+- Reduce high-frame-rate inputs before expensive filters. On eligible VAAPI jobs, rotate and resize on the GPU before CPU HDR conversion; keep full-range conversion on the CPU.
+- Prefer the pinned FFmpeg's SIMD `tonemapx` for HDR base-layer conversion, with the zscale/tonemap path as fallback. Validate output BT.709/range tags, unapplied rotation, codec and duration. No proprietary AME binaries or new runtime dependencies are included. See [AME reference and color pipeline](docs/ame-reference.md).
+
 ## 0.6.0 — event-driven persistent queues
 
 - Replace repeated history scans with Linux inotify, a separate collector and a private SQLite queue. Wait for stable writes and query only the affected Photos folder.

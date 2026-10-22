@@ -9,6 +9,7 @@ import math
 import shutil
 import time
 import sys
+from fractions import Fraction
 
 FREE_HEADROOM=4*1024**3
 MAX_OUTPUT_BYTES=16*1024**3
@@ -136,16 +137,32 @@ class Decoder:
 
     def transcode(self, source, work):
         probe=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-select_streams','v:0',
-            '-show_entries','stream=codec_name,pix_fmt,color_transfer,color_range:stream_side_data=rotation:format=duration','-of','json',*self.input_args(source)],work))
+            '-show_entries','stream=codec_name,pix_fmt,color_transfer,color_range,avg_frame_rate:stream_side_data=rotation:format=duration','-of','json',*self.input_args(source)],work))
         duration=float(probe.get('format',{}).get('duration',0))
         require_space(work,video_budget(duration))
+        hdr=probe.get('streams',[{}])[0].get('color_transfer') in ('arib-std-b67','smpte2084')
+        mappers=['legacy']
+        if hdr:
+            try:
+                listing=self.run('ffmpeg','ffmpeg',['-hide_banner','-filters'],work,timeout=15).decode(errors='replace')
+                if any(len(parts)>1 and parts[1]=='tonemapx' for parts in map(str.split,listing.splitlines())):
+                    mappers.insert(0,'tonemapx')
+            except (subprocess.CalledProcessError,subprocess.TimeoutExpired,OSError): pass
+        def attempt(accelerated):
+            for mapper in mappers:
+                self.tone_mapper=mapper
+                try:return self._transcode_once(source,work,probe,accelerated)
+                except (subprocess.CalledProcessError,subprocess.TimeoutExpired,ValueError,OSError):
+                    partial=work/'compatible.mp4'
+                    if partial.exists():partial.unlink()
+                    if mapper==mappers[-1]:raise
         if getattr(self,'hardware',None):
             initial=self.hardware
             candidates=[initial]+[dict(initial,driver=name) for name in initial.get('driver_fallbacks',[])]
             for candidate in candidates:
                 self.hardware=candidate
                 try:
-                    result=self._transcode_once(source,work,probe,True)
+                    result=attempt(True)
                     print('VIDEO_BACKEND='+candidate.get('backend','vaapi'),flush=True)
                     if candidate.get('driver'): print('VIDEO_DRIVER='+candidate['driver'],flush=True)
                     return result
@@ -154,7 +171,7 @@ class Decoder:
                     if partial.exists(): partial.unlink()
             self.hardware=initial
             print('HARDWARE_FALLBACK=software',flush=True)
-        result=self._transcode_once(source,work,probe,False)
+        result=attempt(False)
         print('VIDEO_BACKEND=software',flush=True)
         return result
 
@@ -164,6 +181,16 @@ class Decoder:
         gpu_scaling=False
         device_args=[];decode_args=['-hwaccel','none']
         stream=probe.get('streams',[{}])[0]
+        hdr=stream.get('color_transfer') in ('arib-std-b67','smpte2084')
+        full_range=stream.get('color_range')=='pc' or stream.get('pix_fmt')=='yuvj420p'
+        early_fps=[]
+        try:
+            if Fraction(stream.get('avg_frame_rate','0'))>30:early_fps=['fps=30']
+        except (ValueError,ZeroDivisionError,TypeError):pass
+        rotations=[x.get('rotation',0) for x in stream.get('side_data_list',[]) if x.get('rotation',0)]
+        rotation=rotations[0] if len(rotations)==1 else (0 if not rotations else None)
+        quarter_turn=isinstance(rotation,(int,float)) and math.isfinite(rotation) and rotation%90==0
+        gpu_prefilter=False
         if accelerated:
             backend=self.hardware.get('backend','vaapi')
             if backend=='vaapi':
@@ -181,22 +208,41 @@ class Decoder:
                 if backend=='qsv': decode_device='gpu'
                 decode_args=['-hwaccel',accel,'-hwaccel_device',decode_device,'-hwaccel_output_format',accel]
                 filters=['hwdownload','format='+('p010le' if stream.get('pix_fmt')=='yuv420p10le' else 'nv12')]
-                rotated=any(x.get('rotation',0)%360 for x in stream.get('side_data_list',[]))
-                gpu_scaling=(backend in ('vaapi','qsv') and not rotated
-                    and stream.get('color_transfer') not in ('arib-std-b67','smpte2084')
-                    and stream.get('color_range')!='pc' and stream.get('pix_fmt')!='yuvj420p')
-        if probe.get('streams',[{}])[0].get('color_transfer') in ('arib-std-b67','smpte2084'):
-            filters.append('zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv')
+                gpu_prefilter=backend=='vaapi' and quarter_turn and not full_range
+                gpu_scaling=(backend in ('vaapi','qsv') and not rotations and not hdr and not full_range)
+        scale="scale=w='if(gte(iw,ih),min(iw,1280),min(iw,720))':h='if(gte(iw,ih),min(ih,720),min(ih,1280))':force_original_aspect_ratio=decrease:force_divisible_by=2"
+        if gpu_prefilter:
+            decode_args+=['-noautorotate']
+            turns={90:'cclock',180:'reversal',270:'clock'}
+            turn=turns.get(int(rotation)%360)
+            filters=early_fps+(['transpose_vaapi=dir='+turn] if turn else [])
+            filters+=[scale.replace('scale=','scale_vaapi=',1)+':format='+('p010' if hdr else 'nv12')+':reset_sar=1']
+            if hdr:filters+=['hwdownload','format=p010le']
+            else:filters+=['setparams=range=limited'];gpu_scaling=True
+        else:
+            filters=early_fps+filters
+            if hdr:
+                # Bound CPU color processing to the final resolution, including software fallback.
+                filters+=[scale,'setsar=1']
+        color_path=None
+        if hdr:
+            if getattr(self,'tone_mapper','legacy')=='tonemapx':
+                # HLG-compatible base layer; do not claim complete Dolby Vision reshaping.
+                filters+=['format=yuv420p10le','tonemapx=tonemap=hable:desat=0:apply_dovi=0:p=bt709:t=bt709:m=bt709:range=tv:format=yuv420p']
+                color_path='cpu-tonemapx'
+            else:
+                filters.append('zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv')
+                color_path='cpu-zscale'
         # Landscape <=1280x720, portrait <=720x1280; never upscale.
-        filters+=['scale=w=\'if(gte(iw,ih),min(iw,1280),min(iw,720))\':h=\'if(gte(iw,ih),min(ih,720),min(ih,1280))\':force_original_aspect_ratio=decrease:force_divisible_by=2:in_range=auto:out_range=tv',
-                  'setsar=1','format=yuv420p']
-        if gpu_scaling:
+        if hdr:filters+=['setsar=1','format=yuv420p']
+        elif not gpu_prefilter:filters+=[scale+':in_range=auto:out_range=tv','setsar=1','format=yuv420p']
+        if gpu_scaling and not gpu_prefilter:
             if backend=='vaapi':
                 scale=filters[-3].replace('scale=','scale_vaapi=',1).replace(':in_range=auto','')
                 filters=[scale+':format=nv12:reset_sar=1','setparams=range=limited']
             else:
                 factor='if(gte(iw,ih),min(1,min(1280/iw,720/ih)),min(1,min(720/iw,1280/ih)))'
-                filters=["scale_qsv=w='max(2,trunc(iw*("+factor+")/2)*2)':h='max(2,trunc(ih*("+factor+")/2)*2)':format=nv12",'setsar=1']
+                filters=early_fps+["scale_qsv=w='max(2,trunc(iw*("+factor+")/2)*2)':h='max(2,trunc(ih*("+factor+")/2)*2)':format=nv12",'setsar=1']
         dest=work/'compatible.mp4'
         encoder_args=['-c:v','libx264','-preset','veryfast','-crf','23','-pix_fmt','yuv420p']
         if accelerated:
@@ -207,12 +253,21 @@ class Decoder:
             '-threads','2',*decode_args,*self.input_args(source),'-map','0:v:0','-map','0:a:0?',
             '-map_metadata','-1','-map_chapters','-1','-vf',','.join(filters),
             *encoder_args,'-maxrate','2500k','-bufsize','5000k',
-            '-threads','2','-filter_threads','1','-color_range','tv','-fpsmax','30',
+            '-threads','2','-filter_threads','1','-color_range','tv',
+            *(['-color_primaries','bt709','-color_trc','bt709','-colorspace','bt709'] if hdr else []),'-fpsmax','30',
             '-c:a','aac','-b:a','128k','-ac','2','-movflags','+faststart',dest],work,timeout=21600)
         if not self.compatible_video(dest,work): raise ValueError('Generated video failed compatibility check')
-        result=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-show_entries','format=duration','-of','json',dest],work))
+        result=json.loads(self.run('ffmpeg','ffprobe',['-v','error','-select_streams','v:0','-show_entries','stream=color_range,color_space,color_transfer,color_primaries:stream_side_data=rotation:format=duration','-of','json',dest],work))
         actual=float(result.get('format',{}).get('duration',0))
         if abs(actual-duration)>max(2,duration*0.02): raise ValueError('Incomplete transcoded video')
+        if hdr:
+            output=(result.get('streams') or [{}])[0]
+            if output.get('color_range')!='tv' or any(output.get(k)!='bt709' for k in ('color_space','color_transfer','color_primaries')):
+                raise ValueError('Generated video color tags are invalid')
+        if any(x.get('rotation',0)%360 for s in result.get('streams',[]) for x in s.get('side_data_list',[])):
+            raise ValueError('Generated video has unapplied rotation')
+        if color_path:print('VIDEO_COLOR_PATH='+color_path,flush=True)
+        if gpu_prefilter:print('VIDEO_PREFILTER=vaapi',flush=True)
         return dest
 
 def atomic_json(path, data):

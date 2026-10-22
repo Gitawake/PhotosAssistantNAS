@@ -8,7 +8,7 @@ import tarfile
 from runtime import add_bytes, append_runtime, download_locked, sha256
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.6.0'
+VERSION = '0.6.1'
 
 
 def main():

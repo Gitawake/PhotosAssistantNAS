@@ -13,6 +13,53 @@ import hardware
 from worker import Decoder
 
 class HardwareTests(unittest.TestCase):
+    def hdr_command(self,stream,mapper='tonemapx',valid_tags=True):
+        d=Decoder('/runtime');d.hardware={'backend':'vaapi','device':'/dev/dri/renderD128'};d.tone_mapper=mapper
+        output={'format':{'duration':'5'},'streams':[{'color_range':'tv','color_space':'bt709','color_transfer':'bt709','color_primaries':'bt709'}]}
+        if not valid_tags:output['streams'][0]['color_transfer']='arib-std-b67'
+        with tempfile.TemporaryDirectory() as td,mock.patch.object(d,'run',return_value=json.dumps(output)) as run,mock.patch.object(d,'compatible_video',return_value=True),mock.patch('builtins.print'):
+            d._transcode_once('source',Path(td),{'format':{'duration':'5'},'streams':[stream]},True)
+        return run.call_args_list[0].args[2]
+
+    def test_hdr_cpu_work_is_bounded_after_gpu_rotation_scale_and_frame_reduction(self):
+        stream={'codec_name':'hevc','pix_fmt':'yuv420p10le','color_transfer':'arib-std-b67','color_range':'tv','avg_frame_rate':'120/1','side_data_list':[{'rotation':-90}]}
+        args=self.hdr_command(stream);vf=args[args.index('-vf')+1]
+        order=['fps=30','transpose_vaapi=dir=clock','scale_vaapi=','hwdownload','tonemapx=']
+        self.assertEqual(sorted(order,key=vf.index),order)
+        self.assertIn('-noautorotate',args);self.assertIn('apply_dovi=0',vf)
+        self.assertIn(':format=p010:reset_sar=1',vf);self.assertIn('hwupload',vf)
+        self.assertEqual(args[args.index('-color_trc')+1],'bt709')
+
+    def test_full_range_hdr_and_non_quarter_rotation_do_not_enter_vpp_prefilter(self):
+        for fields in ({'color_range':'pc'},{'side_data_list':[{'rotation':37}]}):
+            stream={'codec_name':'hevc','pix_fmt':'yuv420p10le','color_transfer':'smpte2084','avg_frame_rate':'24000/1001',**fields}
+            args=self.hdr_command(stream);vf=args[args.index('-vf')+1]
+            self.assertNotIn('scale_vaapi',vf);self.assertNotIn('transpose_vaapi',vf)
+            self.assertNotIn('fps=30',vf);self.assertLess(vf.index('scale='),vf.index('tonemapx='))
+
+    def test_hdr_legacy_filter_still_receives_bounded_resolution(self):
+        args=self.hdr_command({'codec_name':'hevc','pix_fmt':'yuv420p10le','color_transfer':'smpte2084'},mapper='legacy')
+        vf=args[args.index('-vf')+1]
+        self.assertLess(vf.index('scale_vaapi='),vf.index('zscale='));self.assertNotIn('tonemapx=',vf)
+
+    def test_hdr_output_with_incorrect_transfer_tags_is_rejected(self):
+        with self.assertRaisesRegex(ValueError,'color tags'):
+            self.hdr_command({'codec_name':'hevc','pix_fmt':'yuv420p10le','color_transfer':'smpte2084'},valid_tags=False)
+
+    def test_tonemapx_failure_removes_partial_and_tries_legacy_before_software(self):
+        d=Decoder('/runtime');d.hardware={'backend':'vaapi','driver':'iHD'};attempts=[]
+        def metadata(name,exe,args,work,**kwargs):
+            if '-filters' in args:return b' .S tonemapx V->V SIMD mapper\n'
+            return json.dumps({'format':{'duration':'5'},'streams':[{'color_transfer':'arib-std-b67'}]}).encode()
+        def encode(source,work,probe,accelerated):
+            attempts.append((accelerated,d.tone_mapper))
+            dest=work/'compatible.mp4'
+            if d.tone_mapper=='tonemapx':dest.write_bytes(b'partial');raise subprocess.CalledProcessError(1,'ffmpeg')
+            self.assertFalse(dest.exists());return dest
+        with tempfile.TemporaryDirectory() as td,mock.patch.object(d,'run',side_effect=metadata),mock.patch.object(d,'_transcode_once',side_effect=encode),mock.patch('worker.require_space'),mock.patch('builtins.print'):
+            d.transcode('source',Path(td))
+        self.assertEqual(attempts,[(True,'tonemapx'),(True,'legacy')])
+
     def test_software_and_missing_compiled_encoder_never_select_device(self):
         self.assertIsNone(hardware.device_for('/unused','software'))
         self.assertIsNone(hardware.device_for('/unused','nvenc',available=set()))

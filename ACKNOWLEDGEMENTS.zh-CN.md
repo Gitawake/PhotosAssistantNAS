@@ -43,3 +43,4 @@ PhotosAssistantNAS 建立在开源社区长期维护的媒体工具和打包成�
 Synology Photos 是目标平台，不是本项目提供或重新分发的依赖。感谢 Synology 提供的相册产品；本项目与 Synology 无隶属或背书关系。
 
 可选 GPU 加速还使用 SynoCommunity 打包的 Intel [media-driver](https://github.com/intel/media-driver)、[gmmlib](https://github.com/intel/gmmlib) 及[旧版 VAAPI 驱动](https://github.com/intel/intel-vaapi-driver)。感谢相关维护者与贡献者。
+感谢 [Jellyfin-FFmpeg](https://github.com/jellyfin/jellyfin-ffmpeg) 贡献者提供 SIMD 色调映射等色彩处理工作，这些工作已包含于锁定的 SynoCommunity FFmpeg 构建。项目也研究了群晖官方 AME 包的组件布局作为互操作参考，没有复制 AME 二进制或激活、许可实现。参见 [AME 参考](docs/ame-reference.zh-CN.md)。

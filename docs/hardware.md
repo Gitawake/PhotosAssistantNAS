@@ -14,7 +14,7 @@ Version 0.5.6 adds capability-based video acceleration. Image/thumbnail processi
 
 Detection never assumes that an encoder listing means the device works. Initialization, encoding, range/codec validation or duration failures trigger software retry. Partial hardware output is removed before retrying, and Photos receives only validated output. CPU and memory limits remain active.
 
-Eligible SDR VAAPI/QSV jobs keep decoded frames on the GPU for scaling and encoding. HDR tone mapping and full-range pixel conversion retain CPU filters; rotation/driver incompatibilities may fall back to software. Hardware output uses a different rate-control configuration from libx264, so size/quality and speed can differ; acceleration is not guaranteed for every file.
+Eligible SDR VAAPI/QSV jobs keep decoded frames on the GPU for scaling and encoding. Since 0.6.1, eligible VAAPI jobs apply quarter-turn rotation and scaling before CPU HDR color conversion; high-frame-rate inputs are reduced before expensive filters. HDR prefers the pinned SIMD `tonemapx`, with zscale/tonemap fallback. Full-range pixels retain CPU conversion; unsupported rotations/drivers may fall back to software. Hardware output uses a different rate-control configuration from libx264, so size/quality and speed can differ; acceleration is not guaranteed for every file. See [color pipeline](ame-reference.md).
 
 To force a backend, create a root-owned, non-group/world-writable `hardware.json` in the installation's `state` directory:
 

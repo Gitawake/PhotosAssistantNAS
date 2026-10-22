@@ -2,6 +2,11 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md)
 
+## 0.6.1 — 限制 HDR 色彩处理规模
+
+- 在昂贵滤镜之前降低高帧率；符合条件的 VAAPI 任务先由 GPU 旋转、缩放，再由 CPU 完成较低分辨率的 HDR 色彩转换。全范围颜色仍保留 CPU 转换。
+- 优先使用现有锁定 FFmpeg 中的 SIMD `tonemapx`，失败可回退 zscale/tonemap。校验输出 BT.709/范围标记、未应用旋转、编码及完整时长。没有内置 AME 专有二进制，也未增加运行库依赖。参见 [AME 参考与色彩管线](docs/ame-reference.zh-CN.md)。
+
 ## 0.6.0 — 事件驱动与持久队列
 
 - 使用 Linux inotify、独立收集进程和私有 SQLite 队列替代重复历史扫描；等待写入稳定后，只查询受影响的 Photos 目录。

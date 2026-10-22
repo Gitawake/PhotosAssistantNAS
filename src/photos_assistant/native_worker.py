@@ -206,6 +206,11 @@ def process(api,entry,state,package,commit=True,phase='all',previous=None):
             for driver in ('iHD','i965','radeonsi'):
                 if ('VIDEO_DRIVER='+driver).encode() in out.splitlines():
                     logging.info('item=%s video-driver=%s',item,driver)
+            for path in ('cpu-tonemapx','cpu-zscale'):
+                if ('VIDEO_COLOR_PATH='+path).encode() in out.splitlines():
+                    logging.info('item=%s video-color-path=%s',item,path)
+            if b'VIDEO_PREFILTER=vaapi' in out.splitlines():
+                logging.info('item=%s video-prefilter=vaapi',item)
             if b'HARDWARE_FALLBACK=software' in out.splitlines():
                 logging.info('item=%s hardware-fallback=software',item)
             source_compatible=(video and b'SOURCE_COMPATIBLE' in out.splitlines()) or (
